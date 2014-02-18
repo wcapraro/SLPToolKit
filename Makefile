@@ -26,7 +26,7 @@ slplib/hashing.o \
 # TARGETS
 #
 
-all: slpsolve slpchk slpgen slpdpth
+all: slpsolve slpchk slpgen slpdpth ldg
 
 
 
@@ -53,10 +53,15 @@ slpgen: slpgen.c slplib.h $(SLPLIBS)
 
 slpdpth: slpdpth.c slplib.h $(SLPLIBS)
 	$(CC) $(CFLAGS) slpdpth.c slplib.h $(SLPLIBS) -lm -o $(BIN_DIR)/slpdpth
+	
+	
+	
+ldg: ldg.c slplib.h $(SLPLIBS)
+	$(CC) $(CFLAGS) ldg.c slplib.h $(SLPLIBS) -lm -o $(BIN_DIR)/ldg
 
 	
 clean: 
 	rm -rf *.o 
 	rm -f $(SLPLIBS) 
-	rm -f $(BIN_DIR)/slpchk $(BIN_DIR)/slpsolve $(BIN_DIR)/slpgen $(BIN_DIR)/slpdpth
+	rm -f $(BIN_DIR)/slpchk $(BIN_DIR)/slpsolve $(BIN_DIR)/slpgen $(BIN_DIR)/slpdpth $(BIN_DIR)/ldg
 
