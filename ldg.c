@@ -1,7 +1,7 @@
 /*
  * 	ldg.c - Boyar and Peralta's Low Depth Greedy heuristic
  *
- * 	Created on: 18/02/2014
+ * 	Created on: 21/02/2014
  *  Author: Wiliam Capraro - wiliam.capraro@studenti.unimi.it
  */
 
@@ -19,19 +19,43 @@
 #define SPACES " \n\r\t"
 
 
-t_bitarray** scanMatrix(FILE*, int, int);
-void lowDepthGreedy(t_bitarray**, int, int);
+void scanMatrix(FILE*, int);
+void lowDepthGreedy(int, int);
+int pickInputs(int, int*, int*);
+int countRows(int, int);
 void usage();
 
 
+/*
+ * Input dimensions
+ */
 int numRows = 0;
 int numCols = 0;
-int maxDepth = 0;
+
+/*
+ * All rows have hamming weight at most 2^k,
+ * therefore the depth of the resulting circuit
+ * is at most k
+ */
+int k = 0;
+
+/*
+ * We keep a collection of bit arrays corresponding
+ * to the input matrix' columns
+ */
+t_bitarray **columns = NULL;
+
+/*
+ * Also, we keep the Hamming weight for each row
+ * of the input matrix for future usage
+ */
+int *H = NULL;
 
 
 int main(int argc, char **argv) {
+
 	int f;
-	int hamming = 0;
+	int verbose = 0;
 	char *fin = NULL;
 
 	FILE *matrix;
@@ -42,16 +66,19 @@ int main(int argc, char **argv) {
 		exit(EXIT_SUCCESS);
 	}
 
-	while ((f=getopt(argc, argv, "w:m:h")) != -1) {
+	while ((f=getopt(argc, argv, "f:k:vh")) != -1) {
 		switch(f) {
 		case 'h':
 			usage();
 			exit(0);
-		case 'm':
+		case 'f':
 			fin = optarg;
 			break;
-		case 'w':
-			hamming = atoi(optarg);
+		case 'k':
+			k = atoi(optarg);
+			break;
+		case 'v':
+			verbose = 1;
 			break;
 		default:
 			printf("Unknown option '%c'\n", f);
@@ -68,20 +95,22 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	// Proceed, parse matrix
-	t_bitarray **signals = scanMatrix(matrix, hamming, TRUE);
+	// Set on to parse matrix
+	scanMatrix(matrix, verbose);
 
 	// Run the heuristic
-	lowDepthGreedy(signals, numRows, numCols);
+	lowDepthGreedy(k, verbose);
 
 	int q;
 
 	for (q=0; q<numCols; q++) {
-		ba_print(signals[q]);
+		ba_print(columns[q]);
 		printf("\n");
-		wipe(signals[q]);
+		wipe(columns[q]);
 	}
-	free(signals);
+	free(columns);
+
+	free(H);
 
 
 	if (matrix) {
@@ -94,16 +123,15 @@ int main(int argc, char **argv) {
 
 
 /**
- * Scan matrix file and returns an array of bitarrays
+ * Parses matrix file and creates data structures
  */
-t_bitarray **scanMatrix(FILE *file, int hamming, int verbose) {
+void scanMatrix(FILE *file, int verbose) {
 
 	int r = -1;
 	int c;
 	int size;
 	char line[LINLEN];
 	char *token;
-	t_bitarray **signals = NULL;
 
 	// We expect the first line to be two integers
 	if (fgets(line, LINLEN, file)) {
@@ -117,22 +145,24 @@ t_bitarray **scanMatrix(FILE *file, int hamming, int verbose) {
 	// and create main data structure
 	if (numRows && numCols)
 	{
-		if (!hamming)
-			hamming = numCols;
+		if (!k)
+			k = (int)ceil(log2(numCols));
 
 		if (verbose)
-			printf("scanMatrix() :: hamming=%d, numRows=%d, numCols=%d\n",hamming, numRows, numCols);
+			printf("scanMatrix() :: hamming=%d, numRows=%d, numCols=%d\n", k, numRows, numCols);
 
-		// Create main data structure. We're gonna use an array of
-		// bitarrays of size numCols + log2(hamming)
-		size = numCols + ceil(log2(hamming));
-		signals = malloc(size*sizeof(t_bitarray*));
+		// Create main data structures. By theorem 1,
+		// we're gonna use up to numCols*numRows + numCols - numRows
+		// columns
+		//maxDepth = ceil(log2(hamming));
+		size = numCols*numRows + numCols - numRows;
+		H = malloc(numRows*sizeof(int));
+		columns = malloc(size*sizeof(t_bitarray*));
 
-		if (signals)
+		if (H && columns)
 		{
-			while (size--) {
-				signals[size] = bitarray(numRows);
-			}
+			for (; size--; ) 			columns[size] = bitarray(numRows);
+			for (r=0; r<numRows; r++)	H[r]=0;
 
 			// Parse each row, but populate the structure column-wise
 			for (r=-1; r<numRows; r++) {
@@ -148,9 +178,11 @@ t_bitarray **scanMatrix(FILE *file, int hamming, int verbose) {
 				for (c=0; c<numCols; c++)
 				{
 					token = strtok(NULL, SPACES);
-					if (token && atoi(token) && verbose) {
-						printf("scanMatrix() :: Setting bit r=%d c=%d value=%s\n", r, c, token);
-						bitset(signals[c], r);
+					if (token && atoi(token)) {
+						bitset(columns[c], r);
+						H[r]++;
+						if (verbose)
+							printf("scanMatrix() :: Setting bit r=%d c=%d H[%d]=%d\n", r, c, r, H[r]);
 					}
 				}
 
@@ -159,26 +191,29 @@ t_bitarray **scanMatrix(FILE *file, int hamming, int verbose) {
 		else
 		{
 			fprintf(stderr, "scanMatrix() :: Allocation error\n");
+			if (H)			free(H);
+			if (columns)	free(columns);
+			exit(ERR_ALLOC);
 		}
 	}
 	else
 	{
-		fprintf(stderr, "scanMatrix() :: parsing error: hamming=%d, numRows=%d, numCols=%d\n", hamming, numRows, numCols);
+		fprintf(stderr, "scanMatrix() :: parsing error: numRows=%d, numCols=%d\n", numRows, numCols);
+		exit(ERR_PARSE);
 	}
-
-	return (signals);
 
 }
 
 
 
 /**
- * LowDepthGreedy
+ * LowDepthGreedy heuristic. Input matrix is supposed
+ * to have Hamming weight at most 2^k in every row
  */
-void lowDepthGreedy(t_bitarray **signals, int m, int n, int k) {
+void lowDepthGreedy(int k, int verbose) {
 
 	// pointer to the next slot in the array
-	int s = n;
+	int s = numCols;
 
 	// the current max depth
 	int i = 0;
@@ -186,10 +221,130 @@ void lowDepthGreedy(t_bitarray **signals, int m, int n, int k) {
 	// columns up to s-1 have depth at most i
 	int ip = s-1;
 
+	int l;
+	int j1;
+	int j2;
 
+	// The i-th phase terminates when there is
+	// no more row with hamming weight greater
+	// than 2^(k-i-1)
+	while (findRowIndexMaxDepth(k-i-1) != -1) {
 
+		// Phase i
+		printf("lowDepthGreedy() :: Beginning phase %d [k=%d, s=%d, ip=%d]\n", i, k, s, ip);
+		l = j1 = j2 = -1;
+		l = pickInputs(ip, &j1, &j2);
+
+		/*
+		 * Do stuff here!!
+		 */
+
+		s = s + numRows;
+		ip = s-1;
+		i++;
+
+	}
 
 }
+
+
+/*
+ * Yields the index of a row in the matrix
+ * with Hamming weight greater than 2^k, provided
+ * one such row exists. Conversely, it returns -1.
+ */
+int findRowIndexMaxDepth(int k) {
+
+	int h = (int)pow(2, k);
+	int index = -1;
+	int j;
+
+	printf("findRowIndexMaxDepth() :: Looking for one row with HW > %d (k=%d) ... ", h, k);
+
+	for (j=0; j<numRows && H; j++) {
+		if (H[j] > h) {
+			h = H[j];
+			index = j;
+		}
+	}
+
+	printf("%d\n", index);
+
+	return (index);
+
+}
+
+
+
+/*
+ * Considering the first limit (+1) columns, if
+ * any row has hamming weight 2 then returns the
+ * index of the row and computes the column indexes
+ * corresponding to the non-zero elements j1 and j2.
+ * Otherwise, returns the row index for the row that
+ * maximizes the set S = { r : M[r, j1] = M[r, j2] = 1 }
+ */
+int pickInputs(int limit, int* j1, int* j2) {
+
+	int t;
+	int jj1 = 0;
+	int jj2 = limit;
+	int count = 0;
+	int c;
+
+	// check for any row with hamming weight 2
+	for (t=0; t<numRows && H; t++) {
+		if (H[t] == 2) {
+			for (; !getbit(columns[jj1], t) && jj1<jj2; jj1++) ;
+			for (; !getbit(columns[jj2], t) && jj1<jj2; jj2--) ;
+			(*j1) = jj1;
+			(*j2) = jj2;
+			printf("pickInputs() :: Row %d has Hamming weight 2! [j1=%d, j2=%d]\n", t, *j1, *j2);
+			return (t);
+		}
+	}
+
+	// choose a pair j1 and j2 that occur most
+	// often in the current rows
+	for (jj1=0; jj1<limit; jj1++)
+		for (jj2=jj1+1; jj2<=limit; jj2++)
+			if ((c = countRows(jj1, jj2)) > count)
+			{
+				count = c;
+				(*j1) = jj1;
+				(*j2) = jj2;
+			}
+
+	// return -1 to indicate that no row had
+	// hamming weight 2
+	printf("pickInputs() :: I've picked inputs [j1=%d, j2=%d]\n", *j1, *j2);
+	return (-1);
+
+}
+
+
+
+/*
+ * Scans through all rows of the matrix and
+ * counts how many rows r satisfy the condition
+ * M[r, j1] = M[r, j2] = 1
+ */
+int countRows(int j1, int j2) {
+
+	int count = 0;
+	int r;
+
+	for (r=0; r<numRows; r++) {
+		if (getbit(columns[j1], r) && getbit(columns[j2], r))
+			count++;
+	}
+
+	printf("countRows() :: There are %d rows having bits %d=1 and %d=1\n", count, j1, j2);
+
+	return (count);
+
+}
+
 
 
 
@@ -200,8 +355,9 @@ void usage() {
 	printf("\n%s -- Boyar and Peralta's Heuristic for minimizing linear components' depth\n\n", PROG_NAME);
 	printf("ldg [optlist]\n\n");
 	printf("List of options:\n");
-	printf("  -m <file>\tthe matrix file to use as input (mandatory)\n");
-	printf("  -w <int>\tmaximum hamming weight for all rows, or maximum depth allowed (default is ?)\n");
+	printf("  -f <file>\tthe matrix file to use as input (mandatory)\n");
+	printf("  -k <int>\tall rows have Hamming weight at most 2^k\n");
+	printf("  -v\t\tverbose\n");
 	printf("  -h\t\tshows this message\n\n");
 }
 

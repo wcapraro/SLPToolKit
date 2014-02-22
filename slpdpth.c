@@ -17,7 +17,6 @@
 
 
 int lightweight_compile(FILE*, int);
-void cleanmem();
 void usage();
 
 
