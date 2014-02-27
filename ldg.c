@@ -19,7 +19,7 @@
 #define SPACES " \n\r\t"
 
 
-void scanMatrix(FILE*, int);
+void scanMatrix(int);
 void lowDepthGreedy(int, int);
 void pickInputs(int, int*, int*, int);
 int countRows(int, int, int);
@@ -41,7 +41,7 @@ int k = 0;
 
 /*
  * We keep a collection of bit arrays corresponding
- * to the input matrix' columns
+ * to the input matrix columns
  */
 t_bitarray **columns = NULL;
 
@@ -52,10 +52,10 @@ t_bitarray **columns = NULL;
 int *H = NULL;
 
 /*
- * Input and output files
+ * Pointers to input and output files
  */
-FILE *inFile;
-FILE *outFile;
+FILE *inFile = NULL;
+FILE *outFile = NULL;
 
 
 int main(int argc, char **argv) {
@@ -113,17 +113,20 @@ int main(int argc, char **argv) {
 	}
 
 	// Set on to parse inFile
-	scanMatrix(inFile, verbose);
+	scanMatrix(verbose);
 
 	// Run the heuristic
 	lowDepthGreedy(k, verbose);
 
 	// Print the outputs and deallocates memory
-	printOutputsAndCleanup(outFile, numRows, numCols);
+	printOutputs(outFile, numRows, numCols);
+	printOutputs( stdout, numRows, numCols);
 
 
+	// Clean up
 	if (inFile) 	fclose(inFile);
 	if (outFile)	fclose(outFile);
+	cleanup();
 
 	exit(0);
 
@@ -133,7 +136,7 @@ int main(int argc, char **argv) {
 /**
  * Parses matrix file and creates data structures
  */
-void scanMatrix(FILE *file, int verbose) {
+void scanMatrix(int verbose) {
 
 	int r = -1;
 	int c;
@@ -142,7 +145,7 @@ void scanMatrix(FILE *file, int verbose) {
 	char *token;
 
 	// We expect the first line to be two integers
-	if (fgets(line, LINLEN, file)) {
+	if (fgets(line, LINLEN, inFile)) {
 		token = strtok(line, SPACES);
 		if (token)	numRows = atoi(token);
 		token = strtok(NULL, SPACES);
@@ -174,7 +177,7 @@ void scanMatrix(FILE *file, int verbose) {
 			// Parse each row, but populate the structure column-wise
 			for (r=-1; r<numRows; r++) {
 
-				fgets(line, LINLEN, file);
+				fgets(line, LINLEN, inFile);
 				strtok(line, SPACES);
 
 				// Skip the first line
@@ -213,23 +216,31 @@ void scanMatrix(FILE *file, int verbose) {
 
 
 
-void printFilePreamble(int numRows, int numCols) {
+void printFilePreamble(FILE *to, int numRows, int numCols) {
+
+	if (!to)
+		return;
 
 	int m = 0;
 	int n = 0;
 
-	fprintf(outFile, "#\n# Boyar and Peralta's Low Depth Greedy heuristic\n#\n\n"),
-			fprintf(outFile, "%d inputs\n", numCols);
-	while (n < numCols)		fprintf(outFile, "X%d ", n++);
-	fprintf(outFile, "\n");
-	while (m < numRows)		fprintf(outFile, "Y%d ", m++);
-	fprintf(outFile, "\n");
+	fprintf(to, "#\n# Boyar and Peralta's Low Depth Greedy heuristic\n#\n\n");
+	fprintf(to, "%d inputs\n", numCols);
+	while (n < numCols)		fprintf(to, "X%d ", n++);
+	fprintf(to, "\n");
+	fprintf(to, "%d outputs\n", numRows);
+	while (m < numRows)		fprintf(to, "Y%d ", m++);
+	fprintf(to, "\n\n");
+	fprintf(to, "BEGIN\n");
 
 }
 
 
 
-void printOutputsAndCleanup(FILE *to, int numRows, int numCols) {
+void printOutputs(FILE *to, int numRows, int numCols) {
+
+	if (!to)
+		return;
 
 	int size = numRows*numCols + numRows - numCols;
 	int r;
@@ -244,14 +255,7 @@ void printOutputsAndCleanup(FILE *to, int numRows, int numCols) {
 		}
 	}
 
-	fprintf(to, "END");
-
-	while (numRows--)
-		wipe(columns[numRows]);
-
-	free(columns);
-	free(H);
-
+	fprintf(to, "END\n");
 }
 
 
@@ -262,8 +266,9 @@ void printOutputsAndCleanup(FILE *to, int numRows, int numCols) {
  */
 void lowDepthGreedy(int k, int verbose) {
 
-	if (outFile)
-		fprintf(outFile, "BEGIN\n");
+	// Prints preamble
+		printFilePreamble(outFile, numRows, numCols);
+		printFilePreamble( stdout, numRows, numCols);
 
 	// pointer to the next slot in the array
 	int s = numCols;
@@ -467,6 +472,15 @@ int countRows(int j1, int j2, int verbose) {
 
 }
 
+
+
+void cleanup() {
+	
+	while (columns && numRows--)	wipe(columns[numRows]);
+	if (columns)					free(columns);
+	if (H)							free(H);
+
+}
 
 
 
