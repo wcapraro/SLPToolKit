@@ -21,8 +21,8 @@
 
 void scanMatrix(FILE*, int);
 void lowDepthGreedy(int, int);
-int pickInputs(int, int*, int*);
-int countRows(int, int);
+void pickInputs(int, int*, int*, int);
+int countRows(int, int, int);
 void usage();
 
 
@@ -51,14 +51,19 @@ t_bitarray **columns = NULL;
  */
 int *H = NULL;
 
+/*
+ * Input and output files
+ */
+FILE *inFile;
+FILE *outFile;
+
 
 int main(int argc, char **argv) {
 
 	int f;
 	int verbose = 0;
 	char *fin = NULL;
-
-	FILE *matrix;
+	char *fout = NULL;
 
 	/* parse command line options (see the getopt tool) */
 	if (argc < 3) {
@@ -66,13 +71,16 @@ int main(int argc, char **argv) {
 		exit(EXIT_SUCCESS);
 	}
 
-	while ((f=getopt(argc, argv, "f:k:vh")) != -1) {
+	while ((f=getopt(argc, argv, "f:k:o:vh")) != -1) {
 		switch(f) {
 		case 'h':
 			usage();
 			exit(0);
 		case 'f':
 			fin = optarg;
+			break;
+		case 'o':
+			fout = optarg;
 			break;
 		case 'k':
 			k = atoi(optarg);
@@ -88,34 +96,34 @@ int main(int argc, char **argv) {
 
 	// Checks for the input file
 	if (fin) {
-		matrix = fopen(fin, "r");
-		if (!matrix) {
+		inFile = fopen(fin, "r");
+		if (!inFile) {
 			fprintf(stderr, "-- %s: Could not read file %s\n", PROG_NAME, fin);
 			exit(ERR_IO);
 		}
 	}
 
-	// Set on to parse matrix
-	scanMatrix(matrix, verbose);
+	// Checks for the output file
+	if (fout) {
+		outFile = fopen(fout, "w");
+		if (!outFile) {
+			fprintf(stderr, "-- %s: Could not read file %s\n", PROG_NAME, fout);
+			exit(ERR_IO);
+		}
+	}
+
+	// Set on to parse inFile
+	scanMatrix(inFile, verbose);
 
 	// Run the heuristic
 	lowDepthGreedy(k, verbose);
 
-	int q;
-
-	for (q=0; q<numCols; q++) {
-		ba_print(columns[q]);
-		printf("\n");
-		wipe(columns[q]);
-	}
-	free(columns);
-
-	free(H);
+	// Print the outputs and deallocates memory
+	printOutputsAndCleanup(outFile, numRows, numCols);
 
 
-	if (matrix) {
-		fclose(matrix);
-	}
+	if (inFile) 	fclose(inFile);
+	if (outFile)	fclose(outFile);
 
 	exit(0);
 
@@ -154,7 +162,6 @@ void scanMatrix(FILE *file, int verbose) {
 		// Create main data structures. By theorem 1,
 		// we're gonna use up to numCols*numRows + numCols - numRows
 		// columns
-		//maxDepth = ceil(log2(hamming));
 		size = numCols*numRows + numCols - numRows;
 		H = malloc(numRows*sizeof(int));
 		columns = malloc(size*sizeof(t_bitarray*));
@@ -206,11 +213,57 @@ void scanMatrix(FILE *file, int verbose) {
 
 
 
+void printFilePreamble(int numRows, int numCols) {
+
+	int m = 0;
+	int n = 0;
+
+	fprintf(outFile, "#\n# Boyar and Peralta's Low Depth Greedy heuristic\n#\n\n"),
+			fprintf(outFile, "%d inputs\n", numCols);
+	while (n < numCols)		fprintf(outFile, "X%d ", n++);
+	fprintf(outFile, "\n");
+	while (m < numRows)		fprintf(outFile, "Y%d ", m++);
+	fprintf(outFile, "\n");
+
+}
+
+
+
+void printOutputsAndCleanup(FILE *to, int numRows, int numCols) {
+
+	int size = numRows*numCols + numRows - numCols;
+	int r;
+	int c;
+
+	for (r=0; r<numRows; r++) {
+		for (c=0; c<size; c++) {
+			if (to && getbit(columns[c], r))
+				fprintf(to, "Y%d = X%d\n", r, c);
+			else if (getbit(columns[c], r))
+				printf("Y%d = X%d\n", r, c);
+		}
+	}
+
+	fprintf(to, "END");
+
+	while (numRows--)
+		wipe(columns[numRows]);
+
+	free(columns);
+	free(H);
+
+}
+
+
+
 /**
  * LowDepthGreedy heuristic. Input matrix is supposed
  * to have Hamming weight at most 2^k in every row
  */
 void lowDepthGreedy(int k, int verbose) {
+
+	if (outFile)
+		fprintf(outFile, "BEGIN\n");
 
 	// pointer to the next slot in the array
 	int s = numCols;
@@ -221,30 +274,77 @@ void lowDepthGreedy(int k, int verbose) {
 	// columns up to s-1 have depth at most i
 	int ip = s-1;
 
+	int q;
 	int l;
 	int j1;
 	int j2;
 
-	// The i-th phase terminates when there is
-	// no more row with hamming weight greater
-	// than 2^(k-i-1)
-	while (findRowIndexMaxDepth(k-i-1) != -1) {
+	// The heuristic consists of k phases
+	for (; k; k--) {
 
-		// Phase i
-		printf("lowDepthGreedy() :: Beginning phase %d [k=%d, s=%d, ip=%d]\n", i, k, s, ip);
-		l = j1 = j2 = -1;
-		l = pickInputs(ip, &j1, &j2);
+		q = 0;
 
-		/*
-		 * Do stuff here!!
-		 */
+		if (verbose)
+			printf("lowDepthGreedy() :: Beginning phase %d [k=%d, s=%d, ip=%d]\n", i, k, s, ip);
 
-		s = s + numRows;
+		// The i-th phase terminates when there is
+		// no more row with hamming weight greater
+		// than 2^(k-i-1)
+		while (findRowIndexMaxHamming(k-1, verbose) != -1) {
+
+			l = j1 = j2 = -1;
+
+			// At the beginning of the phase, we
+			// first look for a row with hamming weight 2
+			// and process that signal first
+			if (!q++) {
+				l = findRowIndexHamming2(ip, &j1, &j2, verbose);
+				if (l) 	updateRows(j1, j2, s++, verbose);
+				continue;
+			}
+
+			// Otherwise, find the two input variables
+			// that occur most often in the current rows
+			else
+			{
+				pickInputs(ip, &j1, &j2, verbose);
+				updateRows(j1, j2, s++, verbose);
+			}
+
+		}
+
+		// End of i-th phase. Update counters
 		ip = s-1;
 		i++;
-
 	}
 
+}
+
+
+
+/*
+ * Add a new signal corresponding to an XOR gate
+ * of the given two inputs j1 and j2 and update all rows
+ * of the matrix accordingly
+ */
+void updateRows(int j1, int j2, int s, int verbose) {
+
+	int l;
+
+	columns[s] = bitarray(numRows);
+
+	if (outFile)	fprintf(outFile, "X%d = X%d + X%d\n", s, j1, j2);
+	if (TRUE)		fprintf(stdout,  "X%d = X%d + X%d\n", s, j1, j2);
+
+	for (l=0; l<numRows; l++) {
+
+		if (getbit(columns[j1], l) && getbit(columns[j2], l)) {
+			bitclr(columns[j1], l);
+			bitclr(columns[j2], l);
+			bitset(columns[s], l);
+			H[l]--;
+		}
+	}
 }
 
 
@@ -253,13 +353,14 @@ void lowDepthGreedy(int k, int verbose) {
  * with Hamming weight greater than 2^k, provided
  * one such row exists. Conversely, it returns -1.
  */
-int findRowIndexMaxDepth(int k) {
+int findRowIndexMaxHamming(int k, int verbose) {
 
 	int h = (int)pow(2, k);
 	int index = -1;
 	int j;
 
-	printf("findRowIndexMaxDepth() :: Looking for one row with HW > %d (k=%d) ... ", h, k);
+	if (verbose)
+		printf("findRowIndexMaxHamming() :: Looking for rows with Hamming weight > %d ... ", h);
 
 	for (j=0; j<numRows && H; j++) {
 		if (H[j] > h) {
@@ -268,7 +369,8 @@ int findRowIndexMaxDepth(int k) {
 		}
 	}
 
-	printf("%d\n", index);
+	if (verbose)
+		printf("%d\n", index);
 
 	return (index);
 
@@ -284,13 +386,43 @@ int findRowIndexMaxDepth(int k) {
  * Otherwise, returns the row index for the row that
  * maximizes the set S = { r : M[r, j1] = M[r, j2] = 1 }
  */
-int pickInputs(int limit, int* j1, int* j2) {
+void pickInputs(int limit, int* j1, int* j2, int verbose) {
 
 	int t;
 	int jj1 = 0;
 	int jj2 = limit;
 	int count = 0;
 	int c;
+
+	// choose a pair j1 and j2 that occur most
+	// often in the current rows
+	for (jj1=0; jj1<limit; jj1++)
+		for (jj2=jj1+1; jj2<=limit; jj2++)
+			if ((c = countRows(jj1, jj2, 0)) > count)
+			{
+				count = c;
+				(*j1) = jj1;
+				(*j2) = jj2;
+			}
+
+	if (verbose)
+		printf("pickInputs() :: I've picked inputs [j1=%d, j2=%d]\n", *j1, *j2);
+
+}
+
+
+
+/**
+ * Returns the index of a row in the matrix
+ * having hamming weight 2, taking into account
+ * uniquely the inputs up to limit. If no such row
+ * exists, returns -1.
+ */
+int findRowIndexHamming2(int limit, int* j1, int*j2, int verbose) {
+
+	int t = -1;
+	int jj1 = 0;
+	int jj2 = limit;
 
 	// check for any row with hamming weight 2
 	for (t=0; t<numRows && H; t++) {
@@ -299,25 +431,14 @@ int pickInputs(int limit, int* j1, int* j2) {
 			for (; !getbit(columns[jj2], t) && jj1<jj2; jj2--) ;
 			(*j1) = jj1;
 			(*j2) = jj2;
-			printf("pickInputs() :: Row %d has Hamming weight 2! [j1=%d, j2=%d]\n", t, *j1, *j2);
+
+			if (verbose)
+				printf("findRowIndexHamming2() :: Row %d has Hamming weight 2! [j1=%d, j2=%d]\n", t, *j1, *j2);
+
 			return (t);
 		}
 	}
 
-	// choose a pair j1 and j2 that occur most
-	// often in the current rows
-	for (jj1=0; jj1<limit; jj1++)
-		for (jj2=jj1+1; jj2<=limit; jj2++)
-			if ((c = countRows(jj1, jj2)) > count)
-			{
-				count = c;
-				(*j1) = jj1;
-				(*j2) = jj2;
-			}
-
-	// return -1 to indicate that no row had
-	// hamming weight 2
-	printf("pickInputs() :: I've picked inputs [j1=%d, j2=%d]\n", *j1, *j2);
 	return (-1);
 
 }
@@ -329,7 +450,7 @@ int pickInputs(int limit, int* j1, int* j2) {
  * counts how many rows r satisfy the condition
  * M[r, j1] = M[r, j2] = 1
  */
-int countRows(int j1, int j2) {
+int countRows(int j1, int j2, int verbose) {
 
 	int count = 0;
 	int r;
@@ -339,7 +460,8 @@ int countRows(int j1, int j2) {
 			count++;
 	}
 
-	printf("countRows() :: There are %d rows having bits %d=1 and %d=1\n", count, j1, j2);
+	if (verbose)
+		printf("countRows() :: There are %d rows having bits %d=1 and %d=1\n", count, j1, j2);
 
 	return (count);
 
@@ -356,6 +478,7 @@ void usage() {
 	printf("ldg [optlist]\n\n");
 	printf("List of options:\n");
 	printf("  -f <file>\tthe matrix file to use as input (mandatory)\n");
+	printf("  -o <file>\tprint result to <file>\n");
 	printf("  -k <int>\tall rows have Hamming weight at most 2^k\n");
 	printf("  -v\t\tverbose\n");
 	printf("  -h\t\tshows this message\n\n");
