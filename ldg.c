@@ -22,8 +22,9 @@
 void scanMatrix(int);
 void lowDepthGreedy(int, int);
 void pickInputs(int, int*, int*, int);
-int countRows(int, int, int);
 void usage();
+int countRows(int, int, int);
+int inferMaxDepth(int*, int);
 
 
 /*
@@ -52,6 +53,13 @@ t_bitarray **columns = NULL;
 int *H = NULL;
 
 /*
+ * How much to increase the Hamming
+ * weight of each row after every iteration
+ * of the heuristic
+ */
+int *deltaH = NULL;
+
+/*
  * Pointers to input and output files
  */
 FILE *inFile = NULL;
@@ -71,7 +79,7 @@ int main(int argc, char **argv) {
 		exit(EXIT_SUCCESS);
 	}
 
-	while ((f=getopt(argc, argv, "f:k:o:vh")) != -1) {
+	while ((f=getopt(argc, argv, "f:o:vh")) != -1) {
 		switch(f) {
 		case 'h':
 			usage();
@@ -81,9 +89,6 @@ int main(int argc, char **argv) {
 			break;
 		case 'o':
 			fout = optarg;
-			break;
-		case 'k':
-			k = atoi(optarg);
 			break;
 		case 'v':
 			verbose = 1;
@@ -156,9 +161,6 @@ void scanMatrix(int verbose) {
 	// and create main data structure
 	if (numRows && numCols)
 	{
-		if (!k)
-			k = (int)ceil(log2(numCols));
-
 		if (verbose)
 			printf("scanMatrix() :: hamming=%d, numRows=%d, numCols=%d\n", k, numRows, numCols);
 
@@ -167,12 +169,13 @@ void scanMatrix(int verbose) {
 		// columns
 		size = numCols*numRows + numCols - numRows;
 		H = malloc(numRows*sizeof(int));
+		deltaH = malloc(numRows*sizeof(int));
 		columns = malloc(size*sizeof(t_bitarray*));
 
-		if (H && columns)
+		if (H && deltaH && columns)
 		{
 			for (; size--; ) 			columns[size] = bitarray(numRows);
-			for (r=0; r<numRows; r++)	H[r]=0;
+			for (r=0; r<numRows; r++)	H[r] = deltaH[r] = 0;
 
 			// Parse each row, but populate the structure column-wise
 			for (r=-1; r<numRows; r++) {
@@ -195,6 +198,9 @@ void scanMatrix(int verbose) {
 							printf("scanMatrix() :: Setting bit r=%d c=%d H[%d]=%d\n", r, c, r, H[r]);
 					}
 				}
+
+				// Infer maximum circuit depth
+				k = inferMaxDepth(H, numRows);
 
 			}
 		}
@@ -242,16 +248,15 @@ void printOutputs(FILE *to, int numRows, int numCols) {
 	if (!to)
 		return;
 
-	int size = numRows*numCols + numRows - numCols;
+	int size = numRows*numCols + numCols - numRows;
 	int r;
 	int c;
 
 	for (r=0; r<numRows; r++) {
 		for (c=0; c<size; c++) {
-			if (to && getbit(columns[c], r))
+			if (to && getbit(columns[c], r)) {
 				fprintf(to, "Y%d = X%d\n", r, c);
-			else if (getbit(columns[c], r))
-				printf("Y%d = X%d\n", r, c);
+			}
 		}
 	}
 
@@ -279,6 +284,7 @@ void lowDepthGreedy(int k, int verbose) {
 	// columns up to s-1 have depth at most i
 	int ip = s-1;
 
+	int d;
 	int q;
 	int l;
 	int j1;
@@ -304,7 +310,7 @@ void lowDepthGreedy(int k, int verbose) {
 			// and process that signal first
 			if (!q++) {
 				l = findRowIndexHamming2(ip, &j1, &j2, verbose);
-				if (l) 	updateRows(j1, j2, s++, verbose);
+				if (l != -1) 	updateRows(j1, j2, s++, verbose);
 				continue;
 			}
 
@@ -319,6 +325,7 @@ void lowDepthGreedy(int k, int verbose) {
 		}
 
 		// End of i-th phase. Update counters
+		for (d=0; d<numRows; d++)	H[d]+=deltaH[d], deltaH[d]=0;
 		ip = s-1;
 		i++;
 	}
@@ -348,6 +355,8 @@ void updateRows(int j1, int j2, int s, int verbose) {
 			bitclr(columns[j2], l);
 			bitset(columns[s], l);
 			H[l]--;
+			H[l]--;
+			deltaH[l]++;
 		}
 	}
 }
@@ -473,7 +482,29 @@ int countRows(int j1, int j2, int verbose) {
 }
 
 
+/*
+ * Computes the maximum circuit's depth
+ * as max{log2(hamming(M_r) | r=0...numRows}
+ */
+int inferMaxDepth(int *H, int numRows) {
 
+	int max = 0;
+	int i;
+
+	for (i=0; i<numRows; i++) {
+		if (H[i] > max) {
+			max = (int)ceil(log2(H[i]));
+		}
+	}
+
+	return (max);
+}
+
+
+
+/*
+ * Deallocates memory for data structures
+ */
 void cleanup() {
 	
 	while (columns && numRows--)	wipe(columns[numRows]);
@@ -493,7 +524,6 @@ void usage() {
 	printf("List of options:\n");
 	printf("  -f <file>\tthe matrix file to use as input (mandatory)\n");
 	printf("  -o <file>\tprint result to <file>\n");
-	printf("  -k <int>\tall rows have Hamming weight at most 2^k\n");
 	printf("  -v\t\tverbose\n");
 	printf("  -h\t\tshows this message\n\n");
 }
