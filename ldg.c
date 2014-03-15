@@ -285,23 +285,22 @@ void lowDepthGreedy(int k, int verbose) {
 	int ip = s-1;
 
 	int d;
-	//int q;
 	int l;
 	int j1;
 	int j2;
 
 	// The heuristic consists of k phases
-	for (; k>=0; k--) {
-
-		//q = 0;
+	// starting from 0
+	//for (; k>=0; k--) {
+	while (i <= k) {
 
 		if (verbose)
-			printf("lowDepthGreedy() :: Beginning phase %d [k=%d, s=%d, ip=%d]\n", i+1, k, s, ip);
+			printf("lowDepthGreedy() :: Beginning phase %d [k=%d, s=%d, ip=%d]\n", i, k, s, ip);
 
 		// The i-th phase terminates when there is
 		// no more row with hamming weight greater
 		// than 2^(k-i-1)
-		while (findRowIndexMaxHamming(k, verbose) != -1) {
+		while (findRowIndexMaxHamming(k-i-1, verbose) != -1) {
 
 			l = j1 = j2 = -1;
 
@@ -375,22 +374,25 @@ void updateRows(int j1, int j2, int s, int verbose) {
  */
 int findRowIndexMaxHamming(int k, int verbose) {
 
-	int h = (k < 1) ? 0 : (int)pow(2, k-1);
+	int kk = (k < 0) ? 0 : k;
+	int h = (int)pow(2, kk);
 	int index = -1;
 	int j;
 
 	if (verbose)
 		printf("findRowIndexMaxHamming() :: Looking for rows with Hamming weight > %d ... ", h);
 
+	kk = 0;
 	for (j=0; j<numRows && H; j++) {
 		if (H[j] > h) {
 			h = H[j];
 			index = j;
+			kk++;
 		}
 	}
 
 	if (verbose)
-		printf("%d\n", index);
+		printf("%d\n", kk);
 
 	return (index);
 

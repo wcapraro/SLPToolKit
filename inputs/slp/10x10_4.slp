@@ -1,0 +1,54 @@
+#
+# Generated with SLPGen v0.2__09102013
+#
+
+31 gates
+10 inputs
+x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 
+10 outputs
+y0 y1 y2 y3 y4 y5 y6 y7 y8 y9 
+
+BEGIN
+t0 = x4 + x6
+t1 = t0 + x2
+t2 = t1 + x0
+y0 = t2
+t3 = x7 + x9
+t4 = t3 + x6
+t5 = t4 + x4
+t6 = t5 + x3
+y1 = t6
+y2 = x7
+t7 = x4 + x8
+t8 = t7 + x3
+t9 = t8 + x2
+t10 = t9 + x1
+y3 = t10
+t11 = x7 + x9
+t12 = t11 + x5
+t13 = t12 + x4
+t14 = t13 + x3
+t15 = t14 + x2
+t16 = t15 + x1
+y4 = t16
+t17 = x3 + x4
+y5 = t17
+t18 = x7 + x8
+t19 = t18 + x0
+y6 = t19
+t20 = x4 + x8
+t21 = t20 + x2
+t22 = t21 + x0
+y7 = t22
+t23 = x7 + x9
+y8 = t23
+t24 = x8 + x9
+t25 = t24 + x7
+t26 = t25 + x5
+t27 = t26 + x4
+t28 = t27 + x3
+t29 = t28 + x1
+t30 = t29 + x0
+y9 = t30
+END
+
