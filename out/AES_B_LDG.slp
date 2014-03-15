@@ -2,7 +2,7 @@
 # Boyar and Peralta's Low Depth Greedy heuristic
 #
 
-32 gates
+39 gates
 18 inputs
 X0 X1 X2 X3 X4 X5 X6 X7 X8 X9 X10 X11 X12 X13 X14 X15 X16 X17 
 8 outputs
@@ -18,40 +18,42 @@ X23 = X0 + X3
 X24 = X1 + X9
 X25 = X4 + X7
 X26 = X20 + X21
-X27 = X6 + X7
-X28 = X6 + X10
-X29 = X10 + X16
-X30 = X22 + X26
-X31 = X18 + X24
-X32 = X22 + X23
-X33 = X25 + X29
-X34 = X0 + X1
-X35 = X2 + X15
-X36 = X3 + X4
-X37 = X3 + X11
-X38 = X8 + X17
-X39 = X13 + X17
-X40 = X20 + X23
-X41 = X30 + X34
-X42 = X28 + X31
-X43 = X21 + X24
-X44 = X25 + X38
-X45 = X27 + X30
-X46 = X27 + X32
-X47 = X30 + X36
-X48 = X32 + X33
-X49 = X33 + X37
-Y0 = X41
-Y1 = X47
-Y2 = X43
-Y2 = X49
-Y3 = X45
-Y4 = X39
-Y4 = X46
-Y5 = X35
-Y5 = X48
-Y6 = X40
-Y6 = X42
-Y7 = X42
-Y7 = X44
+X27 = X0 + X1
+X28 = X3 + X4
+X29 = X6 + X7
+X30 = X13 + X17
+X31 = X6 + X10
+X32 = X18 + X20
+X33 = X10 + X16
+X34 = X22 + X26
+X35 = X22 + X23
+X36 = X29 + X30
+X37 = X24 + X25
+X38 = X2 + X15
+X39 = X25 + X33
+X40 = X3 + X11
+X41 = X21 + X33
+X42 = X8 + X17
+X43 = X18 + X31
+X44 = X23 + X24
+X45 = X27 + X34
+X46 = X28 + X34
+X47 = X29 + X34
+X48 = X35 + X36
+X49 = X31 + X32
+X50 = X35 + X38
+X51 = X37 + X40
+X52 = X37 + X42
+X53 = X41 + X51
+X54 = X39 + X50
+X55 = X44 + X49
+X56 = X43 + X52
+Y0 = X45
+Y1 = X46
+Y2 = X53
+Y3 = X47
+Y4 = X48
+Y5 = X54
+Y6 = X55
+Y7 = X56
 END

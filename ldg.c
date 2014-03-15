@@ -272,8 +272,8 @@ void printOutputs(FILE *to, int numRows, int numCols) {
 void lowDepthGreedy(int k, int verbose) {
 
 	// Prints preamble
-		printFilePreamble(outFile, numRows, numCols);
-		printFilePreamble( stdout, numRows, numCols);
+	printFilePreamble(outFile, numRows, numCols);
+	printFilePreamble( stdout, numRows, numCols);
 
 	// pointer to the next slot in the array
 	int s = numCols;
@@ -285,33 +285,33 @@ void lowDepthGreedy(int k, int verbose) {
 	int ip = s-1;
 
 	int d;
-	int q;
+	//int q;
 	int l;
 	int j1;
 	int j2;
 
 	// The heuristic consists of k phases
-	for (; k; k--) {
+	for (; k>=0; k--) {
 
-		q = 0;
+		//q = 0;
 
 		if (verbose)
-			printf("lowDepthGreedy() :: Beginning phase %d [k=%d, s=%d, ip=%d]\n", i, k, s, ip);
+			printf("lowDepthGreedy() :: Beginning phase %d [k=%d, s=%d, ip=%d]\n", i+1, k, s, ip);
 
 		// The i-th phase terminates when there is
 		// no more row with hamming weight greater
 		// than 2^(k-i-1)
-		while (findRowIndexMaxHamming(k-1, verbose) != -1) {
+		while (findRowIndexMaxHamming(k, verbose) != -1) {
 
 			l = j1 = j2 = -1;
 
 			// At the beginning of the phase, we
 			// first look for a row with hamming weight 2
 			// and process that signal first
-			if (!q++) {
-				l = findRowIndexHamming2(ip, &j1, &j2, verbose);
-				if (l != -1) 	updateRows(j1, j2, s++, verbose);
+			if ((l = findRowIndexHamming2(ip, &j1, &j2, verbose)) != -1) {
+				updateRows(j1, j2, s++, verbose);
 				continue;
+
 			}
 
 			// Otherwise, find the two input variables
@@ -319,15 +319,21 @@ void lowDepthGreedy(int k, int verbose) {
 			else
 			{
 				pickInputs(ip, &j1, &j2, verbose);
-				updateRows(j1, j2, s++, verbose);
+				if (j1 != -1 && j2 != -1)
+					updateRows(j1, j2, s++, verbose);
+				else break;
 			}
 
 		}
 
 		// End of i-th phase. Update counters
-		for (d=0; d<numRows; d++)	H[d]+=deltaH[d], deltaH[d]=0;
+		for (d=0; d<numRows; d++) {
+			H[d]+=deltaH[d];
+			deltaH[d]=0;
+		}
 		ip = s-1;
 		i++;
+
 	}
 
 }
@@ -369,7 +375,7 @@ void updateRows(int j1, int j2, int s, int verbose) {
  */
 int findRowIndexMaxHamming(int k, int verbose) {
 
-	int h = (int)pow(2, k);
+	int h = (k < 1) ? 0 : (int)pow(2, k-1);
 	int index = -1;
 	int j;
 
@@ -506,7 +512,7 @@ int inferMaxDepth(int *H, int numRows) {
  * Deallocates memory for data structures
  */
 void cleanup() {
-	
+
 	while (columns && numRows--)	wipe(columns[numRows]);
 	if (columns)					free(columns);
 	if (H)							free(H);
