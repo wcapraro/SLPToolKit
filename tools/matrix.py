@@ -6,9 +6,6 @@ import random
 
 class Matrix:
 	
-	# Elements to choose from
-	E = (0, 1)
-
 
 	def __init__(self, nrows, ncols, bias):
 		assert int(nrows) > 0
