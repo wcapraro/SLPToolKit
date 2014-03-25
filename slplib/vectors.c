@@ -10,27 +10,23 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "bitutils.h"
-#include "fsmparseutils.h"
-#include "parseutils.h"
-#include "miscutils.h"
-#include "hashing.h"
+#include <math.h>
 
 
 /**
  * Yields the p-norm of integer vector v of
  * size s
  */
-float norm(int[] v, int s, int p) {
+float norm(int v[], int s, int p) {
 	
 	int i;
-	float n = 0f;
+	float n = 0.0f;
 
 	for (i=0; i<s; i++) {
-		n += math.pow(math.abs(v[i]), p);	
+		n += pow(abs(v[i]), p);
 	}
 
-	n = math.pow(n, 1.0/p);
+	n = pow(n, 1.0/p);
 	return (n);
 }
 
@@ -39,15 +35,25 @@ float norm(int[] v, int s, int p) {
 /**
  * Yields the Euclidean norm of vector v of size s
  */
-float norm2(int[] v, int s) {
-	return (norm(v, s, 2))
+float norm2(int v[], int s) {
+	return (norm(v, s, 2));
 }
 
 
-/*
- * TODO: for each candidate x, compute the new H(x) vector. then pass <x[], H(x)[]> as arguments to the tie-break 
- * function . Tie-break((int*)[], int count, int[] newH, )
+
+/**
+ * Returns the sum of the components of the
+ * given vector
  */
+int vsum(int v[], int s) {
+	int i;
+	int z;
+	for(i=0,z=0; i<s; z+=v[i++]);
+	return (z);
+}
+
+
+
 
 
 

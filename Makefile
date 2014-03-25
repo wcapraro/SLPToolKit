@@ -19,6 +19,7 @@ slplib/clause.o \
 slplib/parseutils.o \
 slplib/fsmparseutils.o \
 slplib/hashing.o \
+slplib/vectors.o \
 
 
 

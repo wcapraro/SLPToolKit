@@ -22,9 +22,10 @@
 void scanMatrix(int);
 void lowDepthGreedy(int, int);
 void pickInputs(int, int*, int*, int);
-void usage();
 int countRows(int, int, int);
 int inferMaxDepth(int*, int);
+float computeUpdatedNorm(int, int);
+void usage();
 
 
 /*
@@ -292,7 +293,7 @@ void lowDepthGreedy(int k, int verbose) {
 	// The heuristic consists of k phases
 	// starting from 0
 	//for (; k>=0; k--) {
-	while (i <= k) {
+	while (i < k) {
 
 		if (verbose)
 			printf("lowDepthGreedy() :: Beginning phase %d [k=%d, s=%d, ip=%d]\n", i, k, s, ip);
@@ -320,7 +321,6 @@ void lowDepthGreedy(int k, int verbose) {
 				pickInputs(ip, &j1, &j2, verbose);
 				if (j1 != -1 && j2 != -1)
 					updateRows(j1, j2, s++, verbose);
-				else break;
 			}
 
 		}
@@ -400,32 +400,71 @@ int findRowIndexMaxHamming(int k, int verbose) {
 
 
 
+/**
+ * Returns the value of the norm of H as if the gate
+ * j1 XOR j2 was added to the matrix
+ */
+float computeUpdatedNorm(int j1, int j2) {
+
+	int newH[numRows];
+	int i;
+
+	for (i=0; i<numRows; i++) {
+		newH[i]=H[i];
+		if (getbit(columns[j1], i) && getbit(columns[j2], i))
+			newH[i]-=2;
+	}
+
+	return (norm2(newH, numRows));
+}
+
+
+
 /*
- * Considering the first limit (+1) columns, if
- * any row has hamming weight 2 then returns the
- * index of the row and computes the column indexes
- * corresponding to the non-zero elements j1 and j2.
- * Otherwise, returns the row index for the row that
- * maximizes the set S = { r : M[r, j1] = M[r, j2] = 1 }
+ * Choose two inputs j1 and j2 that occur most often
+ * in the current rows, i.e which maximize
+ * the set S = { r : M[r, j1] = M[r, j2] = 1 }
  */
 void pickInputs(int limit, int* j1, int* j2, int verbose) {
 
-	int t;
+	int buf1[numRows];
+	int buf2[numRows];
+	int i = 0;
+
 	int jj1 = 0;
-	int jj2 = limit;
+	int jj2 = 0;
 	int count = 0;
 	int c;
 
+	// pre-compute the norm of H
+	float normH = norm2(H, numRows);
+
 	// choose a pair j1 and j2 that occur most
-	// often in the current rows
+	// often in the current rows, resolving ties
+	// by choosing the pair that maximizes the
+	// Euclidean norm of H
 	for (jj1=0; jj1<limit; jj1++)
 		for (jj2=jj1+1; jj2<=limit; jj2++)
-			if ((c = countRows(jj1, jj2, 0)) > count)
+
+			if ((c = countRows(jj1, jj2, 0)) >= count)
 			{
-				count = c;
-				(*j1) = jj1;
-				(*j2) = jj2;
+				if (c > count || computeUpdatedNorm(jj1, jj2) > normH)
+				{
+					count = c;
+					i = 0;
+				}
+
+				// c == count and norm(H) == norm(newH)
+				buf1[i] = jj1;
+				buf2[i] = jj2;
+				i++;
 			}
+
+	// end loop, set j1 and j2
+	if (i>0) {
+		(*j1) = buf1[0];
+		(*j2) = buf2[0];
+	}
 
 	if (verbose)
 		printf("pickInputs() :: I've picked inputs [j1=%d, j2=%d]\n", *j1, *j2);

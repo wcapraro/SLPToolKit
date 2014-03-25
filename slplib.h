@@ -15,5 +15,6 @@
 #include "slplib/fsmparseutils.h"
 #include "slplib/miscutils.h"
 #include "slplib/hashing.h"
+#include "slplib/vectors.h"
 
 #endif /* SLPLIB_H_ */
