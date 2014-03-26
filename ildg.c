@@ -1,7 +1,10 @@
 /*
- * 	ldg.c - Boyar and Peralta's Low Depth Greedy heuristic
+ * 	ildg.c - Improved version of the LowDepthGreedy heuristic
+ * 	by Boyar and Peralta. This version of the heuristic saturates
+ * 	each level before continuing to the next one. Additionally, it
+ * 	makes use of cancelation when applicable.
  *
- * 	Created on: 21/02/2014
+ * 	Created on: 26/04/2014
  *  Author: Wiliam Capraro - wiliam.capraro@studenti.unimi.it
  */
 
@@ -15,7 +18,7 @@
 
 
 
-#define PROG_NAME "LowDepthGreedy"
+#define PROG_NAME "Improved LowDepthGreedy"
 #define SPACES " \n\r\t"
 
 
@@ -232,7 +235,7 @@ void printFilePreamble(FILE *to, int numRows, int numCols) {
 	int m = 0;
 	int n = 0;
 
-	fprintf(to, "#\n# Boyar and Peralta's Low Depth Greedy heuristic\n#\n\n");
+	fprintf(to, "#\n# Improved Low Depth Greedy heuristic\n#\n\n");
 	fprintf(to, "%d inputs\n", numCols);
 	while (n < numCols)		fprintf(to, "X%d ", n++);
 	fprintf(to, "\n");
@@ -299,8 +302,8 @@ void lowDepthGreedy(int k, int verbose) {
 
 		// The i-th phase terminates when there is
 		// no more row with hamming weight greater
-		// than 2^(k-i-1)
-		while (findRowIndexMaxHamming(k-i-1, verbose) != -1) {
+		// than 1
+		while (findRowIndexMaxHamming(0, verbose) != -1) {
 
 			l = j1 = j2 = -1;
 
@@ -357,11 +360,12 @@ void updateRows(int j1, int j2, int s, int verbose) {
 	for (l=0; l<numRows; l++) {
 
 		if (getbit(columns[j1], l) && getbit(columns[j2], l)) {
+
 			bitclr(columns[j1], l);
 			bitclr(columns[j2], l);
+			H[l] = H[l] - 2;
+
 			bitset(columns[s], l);
-			H[l]--;
-			H[l]--;
 			deltaH[l]++;
 
 			if (verbose)
@@ -474,7 +478,7 @@ void pickInputs(int limit, int* j1, int* j2, int verbose) {
 	if (i>0) {
 		(*j1) = buf1[0];
 		(*j2) = buf2[0];
-		
+
 		if (verbose) {
 			printf("pickInputs() :: I've picked inputs [j1=%d, j2=%d]\n", *j1, *j2);
 		}
@@ -516,7 +520,7 @@ int findRowIndexHamming2(int limit, int* j1, int*j2, int verbose) {
 	}
 
 	if (verbose)
-			printf("none\n");
+		printf("none\n");
 
 	return (-1);
 

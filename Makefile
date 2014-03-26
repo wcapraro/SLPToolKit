@@ -27,7 +27,7 @@ slplib/vectors.o \
 # TARGETS
 #
 
-all: slpsolve slpchk slpgen slpdpth ldg
+all: slpsolve slpchk slpgen slpdpth ldg ildg
 
 
 
@@ -59,10 +59,15 @@ slpdpth: slpdpth.c slplib.h $(SLPLIBS)
 	
 ldg: ldg.c slplib.h $(SLPLIBS)
 	$(CC) $(CFLAGS) ldg.c slplib.h $(SLPLIBS) -lm -o $(BIN_DIR)/ldg
+	
+	
+
+ildg: ildg.c slplib.h $(SLPLIBS)
+	$(CC) $(CFLAGS) ildg.c slplib.h $(SLPLIBS) -lm -o $(BIN_DIR)/ildg
 
 	
 clean: 
 	rm -rf *.o 
 	rm -f $(SLPLIBS) 
-	rm -f $(BIN_DIR)/slpchk $(BIN_DIR)/slpsolve $(BIN_DIR)/slpgen $(BIN_DIR)/slpdpth $(BIN_DIR)/ldg
+	rm -rf $(BIN_DIR)/*
 
