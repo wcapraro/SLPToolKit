@@ -293,10 +293,10 @@ void lowDepthGreedy(int k, int verbose) {
 	// The heuristic consists of k phases
 	// starting from 0
 	//for (; k>=0; k--) {
-	while (i < k) {
+	while (i <= k) {
 
 		if (verbose)
-			printf("lowDepthGreedy() :: Beginning phase %d [k=%d, s=%d, ip=%d]\n", i, k, s, ip);
+			printf("\n###\n### Beginning phase %d [k=%d, s=%d, ip=%d]\n###\n", i, k, s, ip);
 
 		// The i-th phase terminates when there is
 		// no more row with hamming weight greater
@@ -321,6 +321,8 @@ void lowDepthGreedy(int k, int verbose) {
 				pickInputs(ip, &j1, &j2, verbose);
 				if (j1 != -1 && j2 != -1)
 					updateRows(j1, j2, s++, verbose);
+				else
+					break;
 			}
 
 		}
@@ -362,6 +364,10 @@ void updateRows(int j1, int j2, int s, int verbose) {
 			H[l]--;
 			H[l]--;
 			deltaH[l]++;
+
+			if (verbose)
+				printf("updateRows() :: Updating row %d\n", l);
+
 		}
 	}
 }
@@ -385,7 +391,7 @@ int findRowIndexMaxHamming(int k, int verbose) {
 	kk = 0;
 	for (j=0; j<numRows && H; j++) {
 		if (H[j] > h) {
-			h = H[j];
+			//h = H[j];
 			index = j;
 			kk++;
 		}
@@ -407,6 +413,7 @@ int findRowIndexMaxHamming(int k, int verbose) {
 float computeUpdatedNorm(int j1, int j2) {
 
 	int newH[numRows];
+	float norm;
 	int i;
 
 	for (i=0; i<numRows; i++) {
@@ -415,7 +422,8 @@ float computeUpdatedNorm(int j1, int j2) {
 			newH[i]-=2;
 	}
 
-	return (norm2(newH, numRows));
+	norm = norm2(newH, numRows);
+	return (norm);
 }
 
 
@@ -427,8 +435,8 @@ float computeUpdatedNorm(int j1, int j2) {
  */
 void pickInputs(int limit, int* j1, int* j2, int verbose) {
 
-	int buf1[numRows];
-	int buf2[numRows];
+	int buf1[numRows*numRows];
+	int buf2[numRows*numRows];
 	int i = 0;
 
 	int jj1 = 0;
@@ -437,20 +445,22 @@ void pickInputs(int limit, int* j1, int* j2, int verbose) {
 	int c;
 
 	// pre-compute the norm of H
-	float normH = norm2(H, numRows);
+	float normH = 0.0f;
 
 	// choose a pair j1 and j2 that occur most
 	// often in the current rows, resolving ties
 	// by choosing the pair that maximizes the
 	// Euclidean norm of H
-	for (jj1=0; jj1<limit; jj1++)
-		for (jj2=jj1+1; jj2<=limit; jj2++)
 
+	for (jj1=0; jj1<limit; jj1++)
+		for (jj2=jj1+1; jj2<=limit; jj2++) 
+		{
 			if ((c = countRows(jj1, jj2, 0)) >= count)
 			{
 				if (c > count || computeUpdatedNorm(jj1, jj2) > normH)
 				{
 					count = c;
+					normH = computeUpdatedNorm(jj1, jj2);
 					i = 0;
 				}
 
@@ -459,15 +469,20 @@ void pickInputs(int limit, int* j1, int* j2, int verbose) {
 				buf2[i] = jj2;
 				i++;
 			}
+		}
+
+	printf("pickInputs() :: DEBUG *j1=%d, *j2=%d, buf1=%d, buf2=%d, i=%d <<<\n", j1, j2, buf1, buf2, i);
 
 	// end loop, set j1 and j2
 	if (i>0) {
 		(*j1) = buf1[0];
 		(*j2) = buf2[0];
+		
+		if (verbose) {
+			printf("pickInputs() :: DEBUG *j1=%d, *j2=%d, buf1=%d, buf2=%d, i=%d <<<\n", j1, j2, buf1, buf2, i);
+			printf("pickInputs() :: I've picked inputs [j1=%d, j2=%d]\n", *j1, *j2);
+		}
 	}
-
-	if (verbose)
-		printf("pickInputs() :: I've picked inputs [j1=%d, j2=%d]\n", *j1, *j2);
 
 }
 
@@ -485,6 +500,9 @@ int findRowIndexHamming2(int limit, int* j1, int*j2, int verbose) {
 	int jj1 = 0;
 	int jj2 = limit;
 
+	if (verbose)
+		printf("findRowIndexHamming2()... ");
+
 	// check for any row with hamming weight 2
 	for (t=0; t<numRows && H; t++) {
 		if (H[t] == 2) {
@@ -494,11 +512,15 @@ int findRowIndexHamming2(int limit, int* j1, int*j2, int verbose) {
 			(*j2) = jj2;
 
 			if (verbose)
-				printf("findRowIndexHamming2() :: Row %d has Hamming weight 2! [j1=%d, j2=%d]\n", t, *j1, *j2);
+				printf("row %d has Hamming weight 2! [j1=%d, j2=%d]\n", t, *j1, *j2);
 
 			return (t);
 		}
+
 	}
+
+	if (verbose)
+			printf("none\n");
 
 	return (-1);
 
