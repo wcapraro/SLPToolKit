@@ -1,8 +1,7 @@
 /*
- * 	ildg.c - Improved version of the LowDepthGreedy heuristic
+ * 	ildg.c - Alternative version of the LowDepthGreedy heuristic
  * 	by Boyar and Peralta. This version of the heuristic saturates
- * 	each level before continuing to the next one. Additionally, it
- * 	makes use of cancelation when applicable.
+ * 	each level before continuing to the next one. 
  *
  * 	Created on: 26/04/2014
  *  Author: Wiliam Capraro - wiliam.capraro@studenti.unimi.it
@@ -18,7 +17,7 @@
 
 
 
-#define PROG_NAME "Improved LowDepthGreedy"
+#define PROG_NAME "Modified LowDepthGreedy"
 #define SPACES " \n\r\t"
 
 
@@ -169,9 +168,7 @@ void scanMatrix(int verbose) {
 		if (verbose)
 			printf("scanMatrix() :: hamming=%d, numRows=%d, numCols=%d\n", k, numRows, numCols);
 
-		// Create main data structures. By theorem 1,
-		// we're gonna use up to numCols*numRows + numCols - numRows
-		// columns
+		// Create main data structures. 
 		size = numCols*numRows + numCols - numRows;
 		H = malloc(numRows*sizeof(int));
 		deltaH = malloc(numRows*sizeof(int));
@@ -235,7 +232,7 @@ void printFilePreamble(FILE *to, int numRows, int numCols) {
 	int m = 0;
 	int n = 0;
 
-	fprintf(to, "#\n# Improved Low Depth Greedy heuristic\n#\n\n");
+	fprintf(to, "#\n# Modified BP-LDG heuristic\n#\n\n");
 	fprintf(to, "%d inputs\n", numCols);
 	while (n < numCols)		fprintf(to, "X%d ", n++);
 	fprintf(to, "\n");
