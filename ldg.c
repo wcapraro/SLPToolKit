@@ -307,22 +307,22 @@ void lowDepthGreedy(int k, int verbose) {
 			// At the beginning of the phase, we
 			// first look for a row with hamming weight 2
 			// and process that signal first
-			if ((l = findRowIndexHamming2(ip, &j1, &j2, verbose)) != -1) {
+			while ((l = findRowIndexHamming2(ip, &j1, &j2, verbose)) != -1) {
 				updateRows(j1, j2, s++, verbose);
-				continue;
-
+				//continue;
 			}
 
 			// Otherwise, find the two input variables
 			// that occur most often in the current rows
+			//else
+			//{
+			l = j1 = j2 = -1;
+			pickInputs(ip, &j1, &j2, verbose);
+			if (j1 != -1 && j2 != -1)
+				updateRows(j1, j2, s++, verbose);
 			else
-			{
-				pickInputs(ip, &j1, &j2, verbose);
-				if (j1 != -1 && j2 != -1)
-					updateRows(j1, j2, s++, verbose);
-				else
-					break;
-			}
+				break;
+			//}
 
 		}
 
@@ -454,7 +454,9 @@ void pickInputs(int limit, int* j1, int* j2, int verbose) {
 	for (jj1=0; jj1<limit; jj1++)
 		for (jj2=jj1+1; jj2<=limit; jj2++) 
 		{
-			if ((c = countRows(jj1, jj2, 0)) >= count)
+			c = countRows(jj1, jj2, 0);
+
+			if (c && c >= count)
 			{
 				if (c > count || computeUpdatedNorm(jj1, jj2) < normH)
 				{
@@ -474,7 +476,7 @@ void pickInputs(int limit, int* j1, int* j2, int verbose) {
 	if (i>0) {
 		(*j1) = buf1[0];
 		(*j2) = buf2[0];
-		
+
 		if (verbose) {
 			printf("pickInputs() :: I've picked inputs [j1=%d, j2=%d]\n", *j1, *j2);
 		}
@@ -516,7 +518,7 @@ int findRowIndexHamming2(int limit, int* j1, int*j2, int verbose) {
 	}
 
 	if (verbose)
-			printf("none\n");
+		printf("none\n");
 
 	return (-1);
 
