@@ -28,7 +28,9 @@ void updateRows(int, int, int, int);
 int countRows(int, int, int);
 int inferMaxDepth(int*, int);
 float computeUpdatedNorm(int, int);
+void printOutputs(FILE*, int, int);
 void usage();
+void cleanup();
 
 
 /*

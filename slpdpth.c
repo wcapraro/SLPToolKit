@@ -3,6 +3,7 @@
  * 	program over GF(2)
  *
  *  Created on: 29/01/2014
+ *  Revisited:	13/04/2014
  *  Author: Wiliam Capraro - wiliam.capraro@studenti.unimi.it
  */
 
@@ -16,7 +17,7 @@
 #define PROG_NAME "SLPDepth"
 
 
-int lightweight_compile(FILE*, int);
+int lightweight_compile(FILE*, int*, int);
 void usage();
 
 
@@ -27,6 +28,9 @@ int main(int argc, char **argv) {
 	FILE *pfile = NULL;
 	int f, h;
 	int verbose = 0;
+
+	/* Keep track of circuit size */
+	int circuit_size = 0;
 
 
 	/* parse command line options (see the getopt tool) */
@@ -64,7 +68,7 @@ int main(int argc, char **argv) {
 
 
 	/* parse each equation one by one */
-	int max_depth = lightweight_compile(pfile, verbose);
+	int max_depth = lightweight_compile(pfile, &circuit_size, verbose);
 
 	if (max_depth < 0) {
 		fprintf(stderr, "--%s : Ooops...! Something went wrong :-(\n", PROG_NAME);
@@ -83,11 +87,11 @@ int main(int argc, char **argv) {
 			pfile = stdout;
 		}
 
-		fprintf(pfile, ">> Depth=%d\t@ %s\n", max_depth, fin);
+		fprintf(pfile, ">> Depth=%d, Size=%d\t@ %s\n", max_depth, circuit_size, fin);
 	}
 
 	if (!fout)
-		printf(">> Depth=%d\t@ %s\n", max_depth, fin);
+		printf(">> Depth=%d, Size=%d\t@ %s\n", max_depth, circuit_size, fin);
 
 
 	/* clean up before exiting */
@@ -102,7 +106,7 @@ int main(int argc, char **argv) {
  * clauses and computes their depth on-the-fly. Also
  * takes responsibility for memory management of clauses.
  */
-int lightweight_compile(FILE *fin, int verbose) {
+int lightweight_compile(FILE *fin, int *size_buffer, int verbose) {
 
 	char line[LINLEN];
 	char copy[LINLEN];
@@ -204,6 +208,8 @@ int lightweight_compile(FILE *fin, int verbose) {
 					printf("0x%x\t[depth=%d]\t%s = %s %s %s\n", cl, d, y, a1, op, a2);
 
 				max_depth = (max_depth > d) ? max_depth : d;
+
+				(*size_buffer)++;
 
 			}			
 
