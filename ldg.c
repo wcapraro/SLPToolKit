@@ -1,7 +1,8 @@
 /*
- * 	ldg.c - Boyar and Peralta's Low Depth Greedy heuristic
+ * 	ldg.c - Boyar-Peralta LowDepthGreedy
  *
  * 	Created on: 21/02/2014
+ * 	Revisited: 	13/04/2014
  *  Author: Wiliam Capraro - wiliam.capraro@studenti.unimi.it
  */
 
@@ -26,7 +27,9 @@ void updateRows(int, int, int, int);
 int countRows(int, int, int);
 int inferMaxDepth(int*, int);
 float computeUpdatedNorm(int, int);
+void printOutputs(FILE*, int, int);
 void usage();
+void cleanup();
 
 
 /*
@@ -292,37 +295,31 @@ void lowDepthGreedy(int k, int verbose) {
 	int j2;
 
 	// The heuristic consists of k phases
+	// starting from 0. The i-th phase terminates when there is
+	// no more row with hamming weight greater
+	// than 2^(k-i-1)
 	while (i <= k) {
 
 		if (verbose)
 			printf("\n###\n### Beginning phase %d [k=%d, s=%d, ip=%d]\n###\n", i, k, s, ip);
 
-		// The i-th phase terminates when there is
-		// no more row with hamming weight greater
-		// than 2^(k-i-1)
+		// At the beginning of the phase, we
+		// first look for a row with Hamming weight 2
+		// and process that signal first
+		l = j1 = j2 = -1;
+		while ((l = findRowIndexHamming2(ip, &j1, &j2, verbose)) != -1) {
+			updateRows(j1, j2, s++, verbose);
+		}
+
+		// Otherwise, find the two input variables
+		// that occur most often in the current rows
 		while (findRowIndexMaxHamming(k-i-1, verbose) != -1) {
-
-			l = j1 = j2 = -1;
-
-			// At the beginning of the phase, we
-			// first look for a row with hamming weight 2
-			// and process that signal first
-			while ((l = findRowIndexHamming2(ip, &j1, &j2, verbose)) != -1) {
-				updateRows(j1, j2, s++, verbose);
-				//continue;
-			}
-
-			// Otherwise, find the two input variables
-			// that occur most often in the current rows
-			//else
-			//{
 			l = j1 = j2 = -1;
 			pickInputs(ip, &j1, &j2, verbose);
 			if (j1 != -1 && j2 != -1)
 				updateRows(j1, j2, s++, verbose);
 			else
 				break;
-			//}
 
 		}
 
