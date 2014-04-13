@@ -87,11 +87,11 @@ int main(int argc, char **argv) {
 			pfile = stdout;
 		}
 
-		fprintf(pfile, ">> Depth=%d, Size=%d\t@ %s\n", max_depth, circuit_size, fin);
+		fprintf(pfile, ">> Depth=%d, Size=%d,\t@ %s\n", max_depth, circuit_size, fin);
 	}
 
 	if (!fout)
-		printf(">> Depth=%d, Size=%d\t@ %s\n", max_depth, circuit_size, fin);
+		printf(">> Depth=%d, Size=%d,\t@ %s\n", max_depth, circuit_size, fin);
 
 
 	/* clean up before exiting */
