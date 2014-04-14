@@ -1,23 +1,23 @@
 #! /usr/bin/env python
 
 
-import subprocess as sub
 import os
 import argparse
 
 
 
-def __prepareDirectories(testset, indirname="mtx", outdirname="slp", tmpfile="__tmp__.out"):
+def __prepareDirectories(testset, heuristic, indirname="mtx", outdirname="slp"):
+	reportfile = "report__%s.txt" % heuristic.split(os.sep)[-1]
 	out_path = os.sep.join([testset.strip(os.sep), outdirname])
 	mtx_path = os.sep.join([testset.strip(os.sep), indirname])
-	tmp_path = os.sep.join([testset.strip(os.sep), tmpfile])
+	report_path = os.sep.join([testset.strip(os.sep), reportfile])
 	assert os.path.isdir(testset)
 	assert os.path.isdir(mtx_path)
 	assert not os.path.exists(out_path)
 	os.mkdir(out_path)
-	if os.path.isfile(tmp_path):
-		os.remove(tmp_path)
-	return (mtx_path, out_path, tmp_path)
+	if os.path.isfile(report_path):
+		os.remove(report_path)
+	return (mtx_path, out_path, report_path)
 
 
 def __processLine(line, find_char="=", end_char=","):
@@ -39,6 +39,13 @@ def __generateReportFile(outfile, depths, sizes):
 		f.close()
 
 
+def __generateStatistics(outfile, depths, sizes):
+	with open(outfile, "a") as f:
+		f.write("\nDepth max=%d, avg=%.2f\n" % (max(depths.values()), avg(depths.values())))
+		f.write("\nSize  max=%d, avg=%.2f\n" % (max(sizes.values()), avg(sizes.values())))
+		f.close()
+
+
 def avg(seq):
 	return sum(seq)/len(seq)
 
@@ -46,7 +53,8 @@ def avg(seq):
 
 if __name__ == "__main__":
 
-	parser = argparse.ArgumentParser(description="Runs a heuristic on a testset and prints a report")
+	parser = argparse.ArgumentParser(description="Compiles a report of the execution of the specified heuristic on "
+												 "the given testset")
 	parser.add_argument( 'heuristic',	help='Path of the executable to use as heuristic', type=str)
 	parser.add_argument( 'testset', 	help='Path on the filesystem of the testes root',  type=str)
 	parser.add_argument('-dn', 	help='Name of the output subdirectory for the testet', type=str, default='slp')
@@ -54,14 +62,14 @@ if __name__ == "__main__":
 
 	args = parser.parse_args() 
 
-	print "Running", args.heuristic, "on testset", args.testset
+	print "#\n#Running", args.heuristic, "on testset", args.testset, "\n#\n"
 
 	# stats
 	depths = dict()
 	sizes = dict()
 
 	# get everything ready...
-	(mtxdir, outdir, tmpfile) = __prepareDirectories(args.testset)
+	(mtxdir, outdir, reportfile) = __prepareDirectories(args.testset, args.heuristic, outdirname=args.dn)
 	heur = args.heuristic
 	slpdpth = os.sep.join([args.bp.strip(os.sep), "slpdpth"])
 
@@ -90,7 +98,8 @@ if __name__ == "__main__":
 			raise Exception("Could not process SLP: " + slp + ". Aborting")
 
 	# generate report
-	__generateReportFile(tmpfile, depths, sizes)
+	__generateReportFile(reportfile, depths, sizes)
+	__generateStatistics(reportfile, depths, sizes)
 
 	
 
