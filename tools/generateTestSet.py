@@ -39,7 +39,7 @@ if __name__ == "__main__":
 	parser.add_argument( 'm', help='Number of columns (inputs)', type=int)
 	parser.add_argument('-b', help='Bias', type=float, default=0.5, dest='b')
 	parser.add_argument('-s', help='Population size', type=int, default=1, dest='N')
-	parser.add_argument('-o', help='Output directory on the filesystem', type=str, dest='out')
+	parser.add_argument('-o', help='Output directory on the filesystem', type=str, default='mtx', dest='out')
 	parser.add_argument('-x', help='Execute a command for each generated matrix', type=str, dest='cmd')
 
 	args = parser.parse_args() 

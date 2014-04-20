@@ -3,6 +3,8 @@
 
 import os
 import argparse
+from prettytable import PrettyTable
+from logger import Logger
 
 
 
@@ -32,59 +34,50 @@ def __processLine(line, find_char="=", end_char=","):
 	return values
 
 
-def __generateReportFile(outfile, depths, sizes):
-	with open(outfile, "w") as f:
-		for n,key in enumerate(sorted(depths.keys())):
-			f.write("%d\t%s\t%d\t%d\n" % (n, key, depths[key], sizes[key]))	
-		f.close()
-
-
-def __generateStatistics(outfile, depths, sizes):
-	with open(outfile, "a") as f:
-		f.write("\nDepth max=%d, avg=%.2f\n" % (max(depths.values()), avg(depths.values())))
-		f.write("\nSize  max=%d, avg=%.2f\n" % (max(sizes.values()), avg(sizes.values())))
-		f.close()
-
-
-def avg(seq):
-	return sum(seq)/len(seq)
-
-
 
 if __name__ == "__main__":
 
-	parser = argparse.ArgumentParser(description="Compiles a report of the execution of the specified heuristic on "
-												 "the given testset")
-	parser.add_argument( 'heuristic',	help='Path of the executable to use as heuristic', type=str)
-	parser.add_argument( 'testset', 	help='Path on the filesystem of the testes root',  type=str)
-	parser.add_argument('-dn', 	help='Name of the output subdirectory for the testet', type=str, default='slp')
-	parser.add_argument('-bp', 	help='Path on the filesystem to binaries', type=str, default='bin')
+	parser = argparse.ArgumentParser(description =	"""
+													Runs a specified heuristic on a specified testset and 
+													produces report information that can be saved to
+													a file.
+													"""
+	)
+	parser.add_argument( 'heur',	help='Path of the executable to use as heuristic', type=str)
+	parser.add_argument( 'ts', 		help='Path on the filesystem of the testset root',  type=str)
+	parser.add_argument('-dn', 		help='Name of the output subdirectory for the testet', type=str, default='slp')
+	parser.add_argument('-bp', 		help='Path on the filesystem to binaries', type=str, default='bin')
+	parser.add_argument('-v', 		help='Verbose', type=bool, default=True)
 
 	args = parser.parse_args() 
+	
+	log = Logger()
+	if (args.v):
+		print log.header('Running {0:s} on testset {1:s}'.format(args.heur, args.ts))
 
-	print "#\n#Running", args.heuristic, "on testset", args.testset, "\n#\n"
-
-	# stats
-	depths = dict()
-	sizes = dict()
 
 	# get everything ready...
-	(mtxdir, outdir, reportfile) = __prepareDirectories(args.testset, args.heuristic, outdirname=args.dn)
-	heur = args.heuristic
+	(mtxdir, outdir, reportfile) = __prepareDirectories(args.ts, args.heur, outdirname=args.dn)
+	heur = args.heur
 	slpdpth = os.sep.join([args.bp.strip(os.sep), "slpdpth"])
 
-	# walk through each matrix of the testset
+
+	# walk through each matrix of the testset and
+	# compile the corresponding slp
 	matrices = [x for x in os.listdir(mtxdir) if x.endswith(".mtx")]
 	for mtx in matrices:
 		mtxfile = os.sep.join([mtxdir, mtx])
 		slpfile = os.sep.join([outdir, mtx.replace('.mtx', '.slp', 1)])
 		exec_cmd = "%s -f %s -o %s > /dev/null" % (heur, mtxfile, slpfile)
 		if not os.system(exec_cmd):
-			print "+@", slpfile
+			log.info(slpfile)
 		else:
 			raise Exception("Could not create file " + slpfile + ". Aborting...")
 
-	# here if slps compiled correctly
+
+	# generate report
+	table = PrettyTable(['slp name', 'depth', 'size'])
+	table.align["slp name"]="l"
 	slps = [x for x in os.listdir(outdir) if x.endswith(".slp")]
 	for slp in slps:
 		slpfile = os.sep.join([outdir.strip(os.sep), slp])
@@ -92,14 +85,19 @@ if __name__ == "__main__":
 		line = os.popen(exec_cmd, "r").readline()
 		if line:
 			depth, size = __processLine(line)
-			depths[slp] = depth
-			sizes[slp] = size
+			table.add_row([slp, depth, size])
 		else:
 			raise Exception("Could not process SLP: " + slp + ". Aborting")
 
-	# generate report
-	__generateReportFile(reportfile, depths, sizes)
-	__generateStatistics(reportfile, depths, sizes)
+	
+	# pretty print the table
+	table.sortby = "slp name"
+
+	with open(reportfile, "w") as rf:
+		rf.write(str(table))
+	rf.close()
+	
+	print log.info("Output saved to file {0:s}".format(reportfile))
 
 	
 
