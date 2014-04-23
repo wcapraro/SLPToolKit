@@ -70,7 +70,7 @@ if __name__ == "__main__":
 		slpfile = os.sep.join([outdir, mtx.replace('.mtx', '.slp', 1)])
 		exec_cmd = "%s -f %s -o %s > /dev/null" % (heur, mtxfile, slpfile)
 		if not os.system(exec_cmd):
-			log.info(slpfile)
+			print log.info(slpfile)
 		else:
 			raise Exception("Could not create file " + slpfile + ". Aborting...")
 

@@ -557,11 +557,11 @@ int inferMaxDepth(int *H, int numRows) {
 
 	for (i=0; i<numRows; i++) {
 		if (H[i] > max) {
-			max = (int)ceil(log2(H[i]));
+			max = H[i];
 		}
 	}
 
-	return (max);
+	return ((int)ceil(log2(max)));
 }
 
 

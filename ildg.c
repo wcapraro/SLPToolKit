@@ -294,7 +294,7 @@ void lowDepthGreedy(int k, int verbose) {
 	int j2;
 
 	// The heuristic consists of k phases
-	while (i < k) {
+	while (i <= k) {
 
 		if (verbose)
 			printf("\n###\n### Beginning phase %d [k=%d, s=%d, ip=%d]\n###\n", i, k, s, ip);
@@ -555,11 +555,11 @@ int inferMaxDepth(int *H, int numRows) {
 
 	for (i=0; i<numRows; i++) {
 		if (H[i] > max) {
-			max = (int)ceil(log2(H[i]));
+			max = H[i];
 		}
 	}
 
-	return (max);
+	return ((int)ceil(log2(max)));
 }
 
 
