@@ -20,14 +20,14 @@ slplib/parseutils.o \
 slplib/fsmparseutils.o \
 slplib/hashing.o \
 slplib/vectors.o \
-
+slplib/slp.o \
 
 
 #
-# TARGETS
+# TARGETS 
 #
 
-all: slpsolve slpchk slpgen slpdpth ldg ildg
+all: slpsolve slpchk slpgen slpdpth ldg ildg xldg
 
 
 
@@ -64,6 +64,11 @@ ldg: ldg.c slplib.h $(SLPLIBS)
 
 ildg: ildg.c slplib.h $(SLPLIBS)
 	$(CC) $(CFLAGS) ildg.c slplib.h $(SLPLIBS) -lm -o $(BIN_DIR)/ildg
+	
+	
+
+xldg: xldg.c slplib.h $(SLPLIBS)
+	$(CC) $(CFLAGS) xldg.c slplib.h $(SLPLIBS) -lm -o $(BIN_DIR)/xldg
 
 	
 clean: 

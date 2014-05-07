@@ -83,7 +83,6 @@ void ba_print(t_bitarray *ba) {
 t_bitarray *ba_and(t_bitarray *a, t_bitarray *b) {
 	t_bitarray *res = NULL;
 	if (a && b && a->size == b->size) {
-		printf("## AND ");
 		ba_print(a);
 		printf(", ");
 		ba_print(b);

@@ -13,6 +13,7 @@
 #include "slplib/bitutils.h"
 #include "slplib/bastack.h"
 #include "slplib/fsmparseutils.h"
+#include "slplib/slp.h"
 #include "slplib/miscutils.h"
 #include "slplib/hashing.h"
 #include "slplib/vectors.h"

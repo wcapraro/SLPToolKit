@@ -175,6 +175,7 @@ void print_clause(t_clause *c) {
 }
 
 
+
 /*
  * (Recursively) evaluates a clause. Assumes each input variable
  * has a valid value associated with it.

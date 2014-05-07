@@ -1,7 +1,9 @@
+
 #
-# Boyar and Peralta's Low Depth Greedy heuristic
+# Boyar-Peralta LowDepthGreedy, extended version
 #
 
+78 gates
 25 inputs
 X0 X1 X2 X3 X4 X5 X6 X7 X8 X9 X10 X11 X12 X13 X14 X15 X16 X17 X18 X19 X20 X21 X22 X23 X24 
 25 outputs
@@ -112,3 +114,4 @@ Y22 = X101
 Y23 = X69
 Y24 = X102
 END
+
