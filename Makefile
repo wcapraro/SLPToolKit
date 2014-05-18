@@ -27,7 +27,7 @@ slplib/slp.o \
 # TARGETS 
 #
 
-all: slpsolve slpchk slpgen slpdpth ldg ildg xldg
+all: slpsolve slpchk slpgen slpdpth xldg
 
 
 

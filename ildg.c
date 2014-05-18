@@ -3,6 +3,8 @@
  * 	by Boyar and Peralta. This version of the heuristic saturates
  * 	each level before continuing to the next one. 
  *
+ * 	THIS TOOL IS DEPRECATED. USE xldg.c INSTEAD
+ *
  * 	Created on: 26/04/2014
  *  Author: Wiliam Capraro - wiliam.capraro@studenti.unimi.it
  */

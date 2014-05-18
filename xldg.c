@@ -4,6 +4,7 @@
  * 	breaking criterion as well as other parameters.
  *
  * 	Created on: 26/4/2014
+ * 	Revisited:  18/5/2014
  *  Author: Wiliam Capraro - wiliam.capraro@studenti.unimi.it
  */
 
@@ -24,7 +25,7 @@
 t_slp *scanMatrix(int);
 void xLowDepthGreedy(t_slp*, int, int, int, int);
 void pickInputs(int, int*, int*, int);
-void updateRows(t_slp*, int, int, int, int, int);
+void updateRows(t_slp*, int, int, int, int);
 int countRows(int, int, int);
 int inferMaxDepth(int*, int);
 float computeUpdatedNorm(int, int);
@@ -89,10 +90,9 @@ int main(int argc, char **argv) {
 	// of each new phase. Enabled by default
 	int preproc = 1;
 
-	// use cancelation when updating the matrix's rows
-	// after having computed each new signal. Disabled
-	// by default
-	int use_cancelation = 0;
+	// saturate each level before continuing
+	// to the next phase. Disabled by default
+	int saturate = 0;
 
 	// input and output filename
 	char *fin = NULL;
@@ -110,7 +110,7 @@ int main(int argc, char **argv) {
 	}
 
 	// parse command line args (@see getopt)
-	while ((f=getopt(argc, argv, "f:o:p:l:vh")) != -1) {
+	while ((f=getopt(argc, argv, "f:o:p:s:vh")) != -1) {
 		switch(f) {
 		case 'h':
 			usage();
@@ -122,10 +122,10 @@ int main(int argc, char **argv) {
 			fout = optarg;
 			break;
 		case 'p':
-			preproc = streq(optarg, "on") ? 1 : 0;
+			preproc = streq(optarg, "off") ? 0 : 1;
 			break;
-		case 'l':
-			use_cancelation = streq(optarg, "on") ? 1 : 0;
+		case 's':
+			saturate = streq(optarg, "on") ? 1 : 0;
 			break;
 		case 'v':
 			verbose = 1;
@@ -165,7 +165,7 @@ int main(int argc, char **argv) {
 	program->desc = "Boyar-Peralta LowDepthGreedy, extended version";
 
 	// Run the heuristic
-	xLowDepthGreedy(program, k, preproc, use_cancelation, verbose);
+	xLowDepthGreedy(program, k, preproc, saturate, verbose);
 
 	// Adds output signals to SLP and print
 	add_outputs(program, numRows, numCols);
@@ -308,17 +308,15 @@ void add_outputs(t_slp *slp, int numRows, int numCols) {
 
 
 /**
- * Extended version of Boyar and Peralta's LowDepthGreedy
+ * Extended version of the Boyar-Peralta LowDepthGreedy
  * heuristic for computing linear straight-line programs
  * over GF(2). The input matrix is supposed
  * to have Hamming weight at most 2^k in every row. This
  * version of the heuristic does not impose a maximum number
  * of rounds to be performed; rather, it goes on until all
- * rows of the matrix have Hamming weight 1. This version
- * also allows to use variable cancelation and to disable
- * output preprocessing at the beginning of each phase.
+ * rows of the matrix have Hamming weight 1.
  */
-void xLowDepthGreedy(t_slp *slp, int k, int preproc, int cancel, int verbose) {
+void xLowDepthGreedy(t_slp *slp, int k, int preproc, int saturate, int verbose) {
 
 	// pointer to the next slot in the array
 	int s = numCols;
@@ -334,10 +332,11 @@ void xLowDepthGreedy(t_slp *slp, int k, int preproc, int cancel, int verbose) {
 	int l;
 	int j1;
 	int j2;
+	int mh;
 
 	if (verbose) {
 		if (preproc)	printf("@+ Using output preprocessing\n");
-		if (cancel)		printf("@+ Using variable cancelation when possible\n");
+		if (saturate)	printf("@+ Using level saturation\n");
 	}
 
 	// Go
@@ -350,16 +349,17 @@ void xLowDepthGreedy(t_slp *slp, int k, int preproc, int cancel, int verbose) {
 		// corresponding option is enabled
 		l = j1 = j2 = -1;
 		while (preproc && (l = findRowIndexHamming2(ip, &j1, &j2, verbose)) != -1) {
-			updateRows(slp, j1, j2, s++, cancel, verbose);
+			updateRows(slp, j1, j2, s++, verbose);
 		}
 
 		// Otherwise, find the two input variables
 		// that occur most often in the current rows
-		while (findRowIndexMaxHamming(k-i-1, verbose) != -1) {
+		mh = (saturate) ? 0 : k-i-1;
+		while (findRowIndexMaxHamming(mh) != -1) {
 			l = j1 = j2 = -1;
 			pickInputs(ip, &j1, &j2, verbose);
 			if (j1 != -1 && j2 != -1)
-				updateRows(slp, j1, j2, s++, cancel, verbose);
+				updateRows(slp, j1, j2, s++, verbose);
 			else
 				break;
 
@@ -370,7 +370,6 @@ void xLowDepthGreedy(t_slp *slp, int k, int preproc, int cancel, int verbose) {
 		for (d=0; d<numRows; d++) {
 			H[d]+=deltaH[d];
 			deltaH[d]=0;
-			fprintf(stderr, "#### H[%d] = %d\n", d, H[d]);
 			_s += H[d];
 		}
 		ip = s-1;
@@ -391,11 +390,11 @@ void xLowDepthGreedy(t_slp *slp, int k, int preproc, int cancel, int verbose) {
  * of the given two inputs j1 and j2 and update all rows
  * of the matrix accordingly
  */
-void updateRows(t_slp *slp, int j1, int j2, int s, int cancel, int verbose) {
+void updateRows(t_slp *slp, int j1, int j2, int s, int verbose) {
 
 	int l;
 	int delta;
-	bool proceed = 0;
+	bool can_proceed = 0;
 	columns[s] = bitarray(numRows);
 	char *signal_name = malloc(20*sizeof(char));
 
@@ -406,14 +405,10 @@ void updateRows(t_slp *slp, int j1, int j2, int s, int cancel, int verbose) {
 
 	for (l=0; l<numRows; l++) {
 
-		// We update all rows in which either there occur both j1 and j2, or
-		// at least one between j1 and j2 in case we choose to make
-		// use of variable cancelation
-		proceed = 	(getbit(columns[j1], l) && getbit(columns[j2], l)) ||
-				(getbit(columns[j1], l) && cancel) ||
-				(getbit(columns[j2], l) && cancel);
+		// We update all rows in which either there occur both j1 and j2
+		can_proceed = 	(getbit(columns[j1], l) && getbit(columns[j2], l));
 
-		if (proceed) {
+		if (can_proceed) {
 			bittgl(columns[j1], l);
 			bittgl(columns[j2], l);
 			bitset(columns[s], l);
@@ -501,7 +496,7 @@ void pickInputs(int limit, int* j1, int* j2, int verbose) {
 	int count = 0;
 	int c;
 
-	// pre-compute the norm of H
+	// Pre-compute the norm of H
 	float normH = 0.0f;
 
 	// choose a pair j1 and j2 that occur most
@@ -647,7 +642,7 @@ void usage() {
 	printf("List of options:\n");
 	printf("  -o <file>\tPrint result to <file>\n");
 	printf("  -p [on|off]\tPreprocess outputs at the beginning of each phase [default=on]\n");
-	//printf("  -l [on|off]\tUse variable cancelation when possible [default=off]\n");
+	printf("  -s [on|off]\tEnable or disable level saturation [default=off]\n");
 	printf("  -v\t\tVerbose\n");
 	printf("  -h\t\tShows this message\n\n");
 }

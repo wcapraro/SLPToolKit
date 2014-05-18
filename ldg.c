@@ -1,5 +1,7 @@
 /*
- * 	ldg.c - Boyar-Peralta LowDepthGreedy
+ * 	ldg.c - Boyar-Peralta LowDepthGreedy.
+ *
+ * 	THIS TOOL IS DEPRECATED. USE xldg.c INSTEAD
  *
  * 	Created on: 21/02/2014
  * 	Revisited: 	13/04/2014
