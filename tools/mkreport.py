@@ -5,6 +5,7 @@ import os
 import argparse
 from prettytable import PrettyTable
 from logger import Logger
+import fsutils as fs
 
 
 
