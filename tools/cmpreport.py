@@ -21,8 +21,8 @@ COL_TIES = 'Ties'
 COL_AVG1 = 'First Avg'
 COL_AVG2 = 'Second Avg'
 COL_AVG_DIFF = 'Delta Avg'
-COL_BEST = 'Best improve'
-COL_WORST = 'Worst improve'
+COL_BEST = 'Improvement'
+COL_WORST = 'Deterioration'
 COL_SLP = 'SLP Name'
 COL_DELTA = 'Delta'
 COL_COUNT = 'Count'
@@ -63,6 +63,13 @@ def __detectSize(f1):
 		return times[0] if times else '?x?'
 
 
+def __applyTableStyle(table, style):
+	if table and style:
+		if style == 'ascii':
+			pass
+		elif style == 'plain':
+			table.set_style(PLAIN_COLUMNS)
+
 
 if __name__ == "__main__":
 
@@ -71,15 +78,15 @@ if __name__ == "__main__":
 													prints some useful information and statistics
 													"""
 	)
-	parser.add_argument( 'report1', 	help='Path to file to use as first report' ,  type=str)
-	parser.add_argument( 'report2', 	help='Path to file to use as second report',  type=str)
-	parser.add_argument( '-o', 			help='Name of the output file (if any)', type=str)
-	parser.add_argument( '-s', 			help='Perform size analysis', type=bool, default=False)
-	parser.add_argument( '-d', 			help='Perform depth analysis', type=bool, default=False)
-	parser.add_argument( '-t', 			help='Produce statistical data', type=bool, default=True)
-	parser.add_argument( '-p', 			help='Plain output', type=bool, default=False)
-	parser.add_argument( '-n1',			help='Name of the first heuristic', type=str)
-	parser.add_argument( '-n2',			help='Name of the second heuristic', type=str)
+	parser.add_argument( 'report1', help='Path to file to use as first report' ,  type=str)
+	parser.add_argument( 'report2', help='Path to file to use as second report',  type=str)
+	parser.add_argument( '-o', 		help='Name of the output file (if any)', type=str)
+	parser.add_argument( '-s', 		help='Perform size analysis', action='store_true', dest='size', default=False)
+	parser.add_argument( '-d', 		help='Perform depth analysis', action='store_true', dest='depth', default=False)
+	parser.add_argument( '-t',		help='Selects the style to apply for the output', choices=['plain', 'ascii'], default='ascii', dest='style')
+	parser.add_argument( '-n1',		help='Name of the first heuristic', type=str)
+	parser.add_argument( '-n2',		help='Name of the second heuristic', type=str)
+	parser.add_argument( '-q', 		help='Keep quiet', action='store_true', default=False)
 	args = parser.parse_args() 
 
 	# Check and open report files
@@ -107,8 +114,8 @@ if __name__ == "__main__":
 				COL_AVG1:0.0,
 				COL_AVG2:0.0,
 				COL_AVG_DIFF:0.0,
-				COL_BEST:0.0,
-				COL_WORST:0.0
+				COL_BEST:'-',
+				COL_WORST:'-'
 	}
 
 	# Parse report
@@ -123,8 +130,8 @@ if __name__ == "__main__":
 			d2 = int(tokens2[1])
 			s1 = int(tokens1[2])
 			s2 = int(tokens2[2])
-			dpthTable.add_row([name, d1, d2, d2-d1])
-			sizeTable.add_row([name, s1, s2, s2-s1])
+			dpthTable.add_row([name, d1, d2, "{0:+d}".format(d1-d2)])
+			sizeTable.add_row([name, s1, s2, "{0:+d}".format(s1-s2)])
 			
 			# counters
 			__addToDict(stats, COL_COUNT, 1)
@@ -135,11 +142,15 @@ if __name__ == "__main__":
 				__addToDict(stats, COL_TIES, 1)
 
 			# delta
-			delta = d2-d1
-			if (delta < stats[COL_WORST]):
-				stats[COL_WORST]=delta
-			elif (delta > stats[COL_BEST]):
-				stats[COL_BEST]=delta
+			delta = d1-d2
+			if delta < 0:
+				if stats[COL_BEST] == '-':
+					stats[COL_BEST]=0
+				stats[COL_BEST]=min([stats[COL_BEST], delta])
+			elif delta > 0:
+				if stats[COL_WORST] == '-':
+					stats[COL_WORST] = 0
+				stats[COL_WORST]=max([stats[COL_WORST], delta])
 
 			# average
 			__addToDict(stats, COL_AVG1, d1)
@@ -162,32 +173,32 @@ if __name__ == "__main__":
 	statTab.add_column(COL_AVG1, [stats[COL_AVG1]])	
 	statTab.add_column(COL_AVG2, [stats[COL_AVG2]])	
 	statTab.add_column(COL_AVG_DIFF, [stats[COL_AVG_DIFF]])	
-	statTab.add_column(COL_BEST, [stats[COL_BEST]])	
-	statTab.add_column(COL_WORST, [stats[COL_WORST]])	
+	statTab.add_column(COL_BEST, [stats[COL_BEST] if stats[COL_BEST] == '-' else "{0:+d}".format(stats[COL_BEST])])	
+	statTab.add_column(COL_WORST, [stats[COL_WORST] if stats[COL_WORST] == '-' else "{0:+d}".format(stats[COL_WORST])])	
 
-	if (args.p):
-		dpthTable.set_style(PLAIN_COLUMNS)
-		sizeTable.set_style(PLAIN_COLUMNS)
-		statTab.set_style(PLAIN_COLUMNS)
+	# apply styles to tables
+	__applyTableStyle(dpthTable, args.style)
+	__applyTableStyle(sizeTable, args.style)
+	__applyTableStyle(statTab, args.style)
+		
 	
 	# output
 	if args.o:
 		with open(args.o, 'w') as fout:
-			if (args.d):
+			if (args.depth):
 				fout.write(log.info('DEPTH ANALYSIS\n\n', prefix='\n\n>>'))
 				fout.write(str(dpthTable))
-			if (args.s):
+			if (args.size):
 				fout.write(log.info('SIZE ANALYSIS\n\n', prefix='\n\n>>'))
 				fout.write(str(sizeTable))
-			fout.write(log.info('STATISTICS\n\n', prefix='\n\n>>'))
+			fout.write(log.info('DEPTH STATISTICS\n\n', prefix='\n\n>>'))
 			fout.write(str(statTab))
 		fout.close()
 
-	else:
+	if not args.q:
+		__applyTableStyle(statTab, 'plain')
+		statTab.header=False
 		print statTab
-
-	
-# TODO: infer size, column names, heur names? + plain print option	
 
 	
 
