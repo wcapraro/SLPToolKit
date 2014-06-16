@@ -112,6 +112,12 @@ int main(int argc, char **argv) {
 			assign(Xb, paramb[0], Yb, paramb[1], l, positional);
 			l++;
 
+			/* Reset clause values */
+			for (i=0; i<parama[2]; i++) 	reset_clause(Ta[i]);
+			for (i=0; i<paramb[2]; i++) 	reset_clause(Tb[i]);
+			for (i=0; i<parama[1]; i++) 	reset_clause(Ya[i]);
+			for (i=0; i<paramb[1]; i++)		reset_clause(Yb[i]);
+
 			/* evaluate all clauses */
 			for (i=0; i<parama[2]; i++) {
 				evaluate(Ta[i]);

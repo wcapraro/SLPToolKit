@@ -37,6 +37,7 @@ void print_clause(t_clause*);
 void evaluate(t_clause*);
 int enumerate(t_clause*);
 void wipe_clause(t_clause*);
+void reset_clause(t_clause*);
 
 
 #endif /* CLAUSE_H_ */

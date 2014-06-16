@@ -231,5 +231,15 @@ void wipe_clause(t_clause *clause) {
 }
 
 
+/*
+ * Resets one clause's value
+ */
+void reset_clause(t_clause *clause) {
+	if (clause && clause->value != INVALID_BOOL_VALUE) {
+		clause->value = INVALID_BOOL_VALUE;
+	}
+}
+
+
 
 
