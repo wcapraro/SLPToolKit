@@ -83,6 +83,7 @@ if __name__ == "__main__":
 	parser.add_argument( '-o', 		help='Name of the output file', type=str)
 	parser.add_argument( '-s', 		help='What test to perform', choices=['depth', 'size'], dest='test', default='depth')
 	parser.add_argument( '-t',		help='Selects the style to apply for the output', choices=['plain', 'ascii'], default='ascii', dest='style')
+	parser.add_argument( '-So',		help='Just return statistics', action='store_true', default=False, dest='statsonly')
 	parser.add_argument( '-n1',		help='Name of the first heuristic', type=str)
 	parser.add_argument( '-n2',		help='Name of the second heuristic', type=str)
 	parser.add_argument( '-q', 		help='Keep quiet', action='store_true', default=False)
@@ -131,17 +132,20 @@ if __name__ == "__main__":
 			s2 = int(tokens2[2])
 			dpthTable.add_row([name, d1, d2, "{0:+d}".format(d1-d2)])
 			sizeTable.add_row([name, s1, s2, "{0:+d}".format(s1-s2)])
+
+			k1 = s1 if args.test == "size" else d1
+			k2 = s2 if args.test == "size" else d2
 			
 			# counters
 			__addToDict(stats, COL_COUNT, 1)
-			if (d1 != d2):
-				winner = COL_WIN1 if d1<d2 else COL_WIN2
+			if (k1 != k2):
+				winner = COL_WIN1 if k1<k2 else COL_WIN2
 				__addToDict(stats, winner, 1)
 			else:
 				__addToDict(stats, COL_TIES, 1)
 
 			# delta
-			delta = d1-d2
+			delta = k1-k2
 			if delta < 0:
 				if stats[COL_BEST] == '-':
 					stats[COL_BEST]=0
@@ -152,8 +156,8 @@ if __name__ == "__main__":
 				stats[COL_WORST]=max([stats[COL_WORST], delta])
 
 			# average
-			__addToDict(stats, COL_AVG1, d1)
-			__addToDict(stats, COL_AVG2, d2)
+			__addToDict(stats, COL_AVG1, k1)
+			__addToDict(stats, COL_AVG2, k2)
 
 	# end for loop
 	try:
@@ -184,13 +188,13 @@ if __name__ == "__main__":
 	# output
 	if args.o:
 		with open(args.o, 'w') as fout:
-			if (args.depth):
+			if (args.test == "depth" and not args.statsonly):
 				fout.write(log.info('DEPTH ANALYSIS\n\n', prefix='\n\n>>'))
 				fout.write(str(dpthTable))
-			if (args.size):
+			elif (args.test == "size" and not args.statsonly):
 				fout.write(log.info('SIZE ANALYSIS\n\n', prefix='\n\n>>'))
 				fout.write(str(sizeTable))
-			fout.write(log.info('DEPTH STATISTICS\n\n', prefix='\n\n>>'))
+			fout.write(log.info('STATISTICS\n\n', prefix='\n\n>>'))
 			fout.write(str(statTab))
 		fout.close()
 
