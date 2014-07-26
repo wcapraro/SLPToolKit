@@ -5,6 +5,8 @@ import os
 import re
 import argparse
 import fsutils as fs
+from numpy import mean as avg
+from numpy import std
 from itertools import izip_longest as zzip
 from prettytable import PrettyTable
 from prettytable import PLAIN_COLUMNS
@@ -21,11 +23,16 @@ COL_TIES = 'Ties'
 COL_AVG1 = 'First Avg'
 COL_AVG2 = 'Second Avg'
 COL_AVG_DIFF = 'Delta Avg'
+COL_STD1 = 'First Std.Pop'
+COL_STD2 = 'Second Std.Pop'
+COL_STD_DIFF = 'Delta Std.Pop'
 COL_BEST = 'Improvement'
 COL_WORST = 'Deterioration'
 COL_SLP = 'SLP Name'
 COL_DELTA = 'Delta'
 COL_COUNT = 'Count'
+COL_PLIST1 = 'First Values'
+COL_PLIST2 = 'Second Values'
 
 
 def __checkPaths(repo1, repo2, outfile):
@@ -114,8 +121,13 @@ if __name__ == "__main__":
 				COL_AVG1:0.0,
 				COL_AVG2:0.0,
 				COL_AVG_DIFF:0.0,
+				COL_STD1:0.0,
+				COL_STD2:0.0,
+				COL_STD_DIFF:0.0,
 				COL_BEST:'-',
-				COL_WORST:'-'
+				COL_WORST:'-',
+				COL_PLIST1:[],
+				COL_PLIST2:[]
 	}
 
 	# Parse report
@@ -135,6 +147,8 @@ if __name__ == "__main__":
 
 			k1 = s1 if args.test == "size" else d1
 			k2 = s2 if args.test == "size" else d2
+			__addToDict(stats, COL_PLIST1, [k1])
+			__addToDict(stats, COL_PLIST2, [k2])
 			
 			# counters
 			__addToDict(stats, COL_COUNT, 1)
@@ -155,15 +169,14 @@ if __name__ == "__main__":
 					stats[COL_WORST] = 0
 				stats[COL_WORST]=max([stats[COL_WORST], delta])
 
-			# average
-			__addToDict(stats, COL_AVG1, k1)
-			__addToDict(stats, COL_AVG2, k2)
-
-	# end for loop
+	# end for loop, compute mean and variance here
 	try:
-		stats[COL_AVG1]=stats[COL_AVG1]/stats[COL_COUNT]
-		stats[COL_AVG2]=stats[COL_AVG2]/stats[COL_COUNT]
+		stats[COL_AVG1]=avg(stats[COL_PLIST1])
+		stats[COL_AVG2]=avg(stats[COL_PLIST2])
+		stats[COL_STD1]=std(stats[COL_PLIST1])
+		stats[COL_STD2]=std(stats[COL_PLIST2])
 		stats[COL_AVG_DIFF]=stats[COL_AVG1]-stats[COL_AVG2]
+		stats[COL_STD_DIFF]=stats[COL_STD1]-stats[COL_STD2]
 	except Exception as e:
 		log.err(e)
 	
@@ -173,9 +186,12 @@ if __name__ == "__main__":
 	statTab.add_column(COL_WIN1, [stats[COL_WIN1]])	
 	statTab.add_column(COL_WIN2, [stats[COL_WIN2]])	
 	statTab.add_column(COL_TIES, [stats[COL_TIES]])	
-	statTab.add_column(COL_AVG1, [stats[COL_AVG1]])	
-	statTab.add_column(COL_AVG2, [stats[COL_AVG2]])	
-	statTab.add_column(COL_AVG_DIFF, [stats[COL_AVG_DIFF]])	
+	statTab.add_column(COL_AVG1, ["{0:.3f}".format(stats[COL_AVG1])])	
+	statTab.add_column(COL_AVG2, ["{0:.3f}".format(stats[COL_AVG2])])	
+	statTab.add_column(COL_AVG_DIFF, ["{0:+.3f}".format(stats[COL_AVG_DIFF])])	
+	statTab.add_column(COL_STD1, ["{0:.3f}".format(stats[COL_STD1])])	
+	statTab.add_column(COL_STD2, ["{0:.3f}".format(stats[COL_STD2])])	
+	statTab.add_column(COL_STD_DIFF, ["{0:+.3f}".format(stats[COL_STD_DIFF])])	
 	statTab.add_column(COL_BEST, [stats[COL_BEST] if stats[COL_BEST] == '-' else "{0:+d}".format(stats[COL_BEST])])	
 	statTab.add_column(COL_WORST, [stats[COL_WORST] if stats[COL_WORST] == '-' else "{0:+d}".format(stats[COL_WORST])])	
 
