@@ -11,9 +11,9 @@ import fsutils as fs
 
 def __prepareDirectories(testset, heuristic, indirname="mtx", outdirname="slp"):
 	reportfile = "%s.report" % outdirname.split(os.sep)[-1]
-	out_path = os.sep.join([testset.strip(os.sep), outdirname])
-	mtx_path = os.sep.join([testset.strip(os.sep), indirname])
-	report_path = os.sep.join([testset.strip(os.sep), reportfile])
+	out_path = os.sep.join([testset.rstrip(os.sep), outdirname])
+	mtx_path = os.sep.join([testset.rstrip(os.sep), indirname])
+	report_path = os.sep.join([testset.rstrip(os.sep), reportfile])
 	assert os.path.isdir(testset)
 	assert os.path.isdir(mtx_path)
 	assert not os.path.exists(out_path)
@@ -62,7 +62,7 @@ if __name__ == "__main__":
 	(mtxdir, outdir, reportfile) = __prepareDirectories(args.ts, args.heur, outdirname=args.dn)
 	heur = args.heur
 	opts = "" if not args.hargs else args.hargs
-	slpdpth = os.sep.join([args.bp.strip(os.sep), "slpdpth"])
+	slpdpth = os.sep.join([args.bp.rstrip(os.sep), "slpdpth"])
 
 
 	# walk through each matrix of the testset and
@@ -83,7 +83,7 @@ if __name__ == "__main__":
 	table.align["slp name"]="l"
 	slps = [x for x in os.listdir(outdir) if x.endswith(".slp")]
 	for slp in slps:
-		slpfile = os.sep.join([outdir.strip(os.sep), slp])
+		slpfile = os.sep.join([outdir.rstrip(os.sep), slp])
 		exec_cmd = "%s -f %s" % (slpdpth, slpfile)
 		line = os.popen(exec_cmd, "r").readline()
 		if line:
