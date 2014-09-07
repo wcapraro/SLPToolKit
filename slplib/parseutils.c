@@ -1,8 +1,8 @@
 /*
  *  parseutils.c
  *
- *  Created on: 01/giu/2013
- *  Revisited: 20/nov/2013
+ *  Created on: 01/06/2013
+ *  Revisited: 06/09/2014
  *  Author: Wiliam Capraro - wiliam.capraro@studenti.unimi.it
  */
 
@@ -161,8 +161,6 @@ void compile(FILE *fin, t_clause ***X, t_clause ***T, t_clause ***Y, int *params
 				if (op && lcname && rcname && target) {
 
 					// find left and right operands
-					//lcl = find_clause(inputs, lcname) ? find_clause(inputs, lcname) : find_clause(temps, lcname);	
-					//rcl = find_clause(inputs, rcname) ? find_clause(inputs, rcname) : find_clause(temps, rcname);
 					lcl = lookup(lcname, inputs, outputs, temps);
 					rcl = lookup(rcname, inputs, outputs, temps);
 
@@ -182,7 +180,6 @@ void compile(FILE *fin, t_clause ***X, t_clause ***T, t_clause ***Y, int *params
 				/* simple output clause */
 				else if (target && lcname) {
 
-					//lcl = find_clause(inputs, lcname) ? find_clause(inputs, lcname) : find_clause(temps, lcname);
 					lcl = lookup(lcname, inputs, outputs, temps);
 
 					if (!lcl) {
@@ -201,14 +198,6 @@ void compile(FILE *fin, t_clause ***X, t_clause ***T, t_clause ***Y, int *params
 				else
 
 				{
-					//char *lcname, *rcname, *op;
-					//t_clause *lcl, *rcl;
-					//lcname = strtok(NULL, "= ");
-					//op = strtok(NULL, "= ");
-					//rcname = strtok(NULL, "= ");
-
-					//lcl = find_clause(inputs, lcname) ? find_clause(inputs, lcname) : find_clause(temps, lcname);
-					//rcl = find_clause(inputs, rcname) ? find_clause(inputs, rcname) : find_clause(temps, rcname);
 					lcl = lookup(lcname, inputs, outputs, temps);
 					rcl = lookup(rcname, inputs, outputs, temps);
 

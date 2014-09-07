@@ -223,7 +223,6 @@ int enumerate(t_clause *clause) {
  */
 void wipe_clause(t_clause *clause) {
 	if (clause) {
-		//printf("wipe_clause(%x)\n", clause);
 		if (clause->operator) free(clause->operator);
 		if (clause->name) free(clause->name);
 		free(clause);

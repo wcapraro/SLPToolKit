@@ -92,8 +92,6 @@ int main(int argc, char **argv) {
 			exit(EXIT_SUCCESS);
 		}
 
-
-		// TODO: name-based test, reorder variables...
 		if (!positional) {
 			hijack(Xa, Xb, parama[0]);
 			hijack(Ya, Yb, parama[1]);
@@ -176,7 +174,6 @@ void assign(t_clause **X, int nx, t_clause **Y, int ny, unsigned long int value,
 			// X[i] = value's rightmost bit
 			b = (bool)(value & 1L);
 			set_value(X[i], b);
-			//printf("# %s = %d\n", get_clause_name(X[i]), get_value(X[i]));
 			value = value >> 1;
 		}
 
@@ -208,10 +205,8 @@ void hijack(t_clause **A, t_clause **B, int num) {
 		int i, n=num;
 
 		while (num) {
-			//printf(">> hijacking #%d::%s <--> ", num-1, get_clause_name(A[num-1]));
 			for (i=0; i<num; i++) {
 				if (streq(get_clause_name(A[num-1]), get_clause_name(B[i]))) {
-					//printf("#%d::%s\n", i, get_clause_name(B[i]));
 					target = B[num-1];
 					B[num-1] = B[i];
 					B[i] = target;

@@ -39,7 +39,6 @@ int size(t_bastack *stack) {
 
 void wipeitem(t_stackitem *item) {
 	if (item) {
-		//printf("@@@ wipeitem(%x)\n", item);
 		wipe(item->ba);
 		free(item);
 	}
@@ -49,7 +48,6 @@ void wipeitem(t_stackitem *item) {
 
 void wipestack(t_bastack *stack) {
 	if (stack) {
-		//printf("@@@ wipestack %x\n", stack);
 		t_stackitem *item = stack->last;
 		t_stackitem *prev;
 		while (item) {
